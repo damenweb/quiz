@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Викторина © Collin</title>
+    <title>Викторина v1.1 © Collin</title>
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -380,51 +380,53 @@
     }
 
 	function handleResult(isCorrect) {
-		const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
-		const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
-		const actingTeam = activeTeam; 
-
-		if (isCorrect) {
-			activeQ.status = 'correct';
-			currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
-			teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
-			
-			// Если все вопросы в теме закончились
-			if (categoryQs.every(q => q.status !== 'open')) {
-				const s = document.getElementById(`score-${actingTeam}`);
-				s.innerText = parseInt(s.innerText) + currentBank;
-				currentBank = 0; 
-				lockedCategory = null;
-
-				// ВАЖНО: Во 2 раунде НЕ переключаем ход. 
-				// Команда остается activeTeam, и соперник снова выбирает ей тему.
-				if (currentRound === 1) {
-					smartSwitch();
-				}
-			}
-			showAnswerState();
-		} else {
-			// ЛОГИКА ОШИБКИ
-			if (currentRound === 2) {
-				const s = document.getElementById(`score-${actingTeam}`);
-				s.innerText = parseInt(s.innerText) - qIdxInCat;
-				currentBank = 0; 
-				lockedCategory = null; 
-				smartSwitch(); // А вот при ошибке — ход переходит!
-			}
-			
-			activeQ.tries += 1;
-			if (activeQ.tries >= 2) {
-				activeQ.status = 'fail';
-				teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
-				teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
-				showAnswerState();
-			} else {
-				closeModal();
-			}
-		}
-		updateUI();
-		renderGrid();
+	    const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
+	    const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
+	    const actingTeam = activeTeam; 
+	
+	    if (isCorrect) {
+	        activeQ.status = 'correct';
+	        currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
+	        teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
+	        
+	        // Если тема закрыта полностью
+	        if (categoryQs.every(q => q.status !== 'open')) {
+	            const s = document.getElementById(`score-${actingTeam}`);
+	            s.innerText = parseInt(s.innerText) + currentBank;
+	            currentBank = 0; 
+	            lockedCategory = null;
+	
+	            // --- ПЕРВЫЙ РАУНД: Переход хода при закрытии темы ---
+	            if (currentRound === 1) {
+	                smartSwitch();
+	            }
+	            // --- ВТОРОЙ РАУНД: Ход ОСТАЕТСЯ у этой же команды ---
+	        }
+	        showAnswerState();
+	    } else {
+	        // --- ЛОГИКА ОШИБКИ (НЕВЕРНО) ---
+	        // В обоих раундах ошибка = сброс резерва и переход хода
+	        if (currentRound === 2) {
+	            const s = document.getElementById(`score-${actingTeam}`);
+	            s.innerText = parseInt(s.innerText) - qIdxInCat; // Штраф только во 2 раунде
+	        }
+	        
+	        currentBank = 0; 
+	        lockedCategory = null; 
+	        smartSwitch(); // Переход хода всегда при "Неверно"
+	
+	        activeQ.tries += 1;
+	        if (activeQ.tries >= 2) {
+	            activeQ.status = 'fail';
+	            teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
+	            teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
+	            showAnswerState();
+	        } else {
+	            closeModal();
+	        }
+	    }
+	    updateUI();
+	    renderGrid();
 	}
 
     function showAnswerState() {
