@@ -168,6 +168,33 @@
 		@keyframes fall { 
 			to { transform: translateY(100vh) rotate(360deg); } 
 		}
+
+		/* Кнопка вопроса */
+		.help-btn {
+		    width: 30px; height: 30px; border-radius: 50%; border: 2px solid #555;
+		    background: transparent; color: #777; font-weight: bold; cursor: pointer;
+		    transition: 0.3s; font-family: 'Roboto', sans-serif;
+		}
+		.help-btn:hover { border-color: var(--gold); color: var(--gold); }
+		
+		/* Оверлей попапа */
+		.help-overlay {
+		    position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+		    display: none; align-items: center; justify-content: center; z-index: 4000;
+		}
+		/* Контент попапа */
+		.help-content {
+		    background: #1a1a2e; border: 2px solid var(--gold); padding: 30px;
+		    border-radius: 20px; max-width: 600px; position: relative;
+		    font-family: 'Roboto', sans-serif; line-height: 1.6;
+		}
+		.close-help {
+		    position: absolute; top: 10px; right: 15px; font-size: 24px;
+		    cursor: pointer; color: #777;
+		}
+		.help-content h2 { color: var(--gold); margin-top: 0; text-transform: uppercase; font-size: 1.2rem; }
+		.help-content ul { padding-left: 20px; margin-bottom: 20px; }
+		.help-content li { margin-bottom: 8px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -198,8 +225,18 @@
             <div class="round-switcher">
                 <button id="rb1" class="round-btn active" onclick="switchRound(1)">РАУНД 1</button>
                 <button id="rb2" class="round-btn" onclick="switchRound(2)">РАУНД 2</button>
-            </div>
-        </div>
+            	<button id="rb1" class="round-btn active" onclick="switchRound(1)">РАУНД 1</button>
+        		<button id="rb2" class="round-btn" onclick="switchRound(2)">РАУНД 2</button>
+    		</div>
+    		<button class="help-btn" onclick="toggleHelp(true)">?</button>
+		</div>
+
+		<div id="helpModal" class="help-overlay" onclick="toggleHelp(false)">
+    		<div class="help-content" onclick="event.stopPropagation()">
+        		<span class="close-help" onclick="toggleHelp(false)">&times;</span>
+        	<div id="helpText"></div>
+    		</div>
+		</div>
         <div class="grid" id="gameGrid"></div>
     </div>
 
@@ -557,6 +594,33 @@
         currentRound = r; currentBank = 0; lockedCategory = null; teamLocks = [[], []];
         updateUI(); renderGrid();
     }
+
+	const helpData = {
+	    1: `<h2>РАУНД 1: «КЛАССИКА»</h2>
+	        <ul>
+	            <li>Верный ответ добавляет баллы в <b>РЕЗЕРВ</b>.</li>
+	            <li>Кнопка <b>«В БАНК»</b> сохраняет очки и передает ход.</li>
+	            <li>Ход передается при ошибке, нажатии «Банк» или закрытии темы.</li>
+	            <li>При ошибке накопленный резерв сгорает.</li>
+	        </ul>`,
+	    2: `<h2>РАУНД 2: «ЭКЗАМЕН»</h2>
+	        <ul>
+	            <li>Соперники выбирают темы друг для друга.</li>
+	            <li>При верном ответе (даже при закрытии темы) ход <b>ОСТАЕТСЯ</b>.</li>
+	            <li>При ошибке: <b>ШТРАФ</b> из счета, резерв сгорает, ход переходит.</li>
+	            <li><b>БАНК:</b> сохраняет очки, но завершает вашу серию (ход переходит).</li>
+	        </ul>`
+	};
+
+	function toggleHelp(show) {
+	    const modal = document.getElementById('helpModal');
+	    if (show) {
+	        document.getElementById('helpText').innerHTML = helpData[currentRound];
+	        modal.style.display = 'flex';
+	    } else {
+	        modal.style.display = 'none';
+	    }
+	}
 </script>
 </body>
 </html>
