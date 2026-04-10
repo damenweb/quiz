@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Викторина v1.1 © Collin</title>
+    <title>Викторина © Collin</title>
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -168,7 +168,7 @@
 		@keyframes fall { 
 			to { transform: translateY(100vh) rotate(360deg); } 
 		}
-
+		
 		/* Кнопка вопроса */
 		.help-btn {
 		    width: 30px; height: 30px; border-radius: 50%; border: 2px solid #555;
@@ -414,55 +414,51 @@
         renderGrid();
     }
 
-	function handleResult(isCorrect) {
-	    const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
-	    const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
-	    const actingTeam = activeTeam; 
-	
-	    if (isCorrect) {
-	        activeQ.status = 'correct';
-	        currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
-	        teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
-	        
-	        // Если тема закрыта полностью
-	        if (categoryQs.every(q => q.status !== 'open')) {
-	            const s = document.getElementById(`score-${actingTeam}`);
-	            s.innerText = parseInt(s.innerText) + currentBank;
-	            currentBank = 0; 
-	            lockedCategory = null;
-	
-	            // --- ПЕРВЫЙ РАУНД: Переход хода при закрытии темы ---
-	            if (currentRound === 1) {
-	                smartSwitch();
-	            }
-	            // --- ВТОРОЙ РАУНД: Ход ОСТАЕТСЯ у этой же команды ---
-	        }
-	        showAnswerState();
-	    } else {
-	        // --- ЛОГИКА ОШИБКИ (НЕВЕРНО) ---
-	        // В обоих раундах ошибка = сброс резерва и переход хода
-	        if (currentRound === 2) {
-	            const s = document.getElementById(`score-${actingTeam}`);
-	            s.innerText = parseInt(s.innerText) - qIdxInCat; // Штраф только во 2 раунде
-	        }
-	        
-	        currentBank = 0; 
-	        lockedCategory = null; 
-	        smartSwitch(); // Переход хода всегда при "Неверно"
-	
-	        activeQ.tries += 1;
-	        if (activeQ.tries >= 2) {
-	            activeQ.status = 'fail';
-	            teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
-	            teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
-	            showAnswerState();
-	        } else {
-	            closeModal();
-	        }
-	    }
-	    updateUI();
-	    renderGrid();
-	}
+    function handleResult(isCorrect) {
+        const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
+        const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
+        const actingTeam = activeTeam; // Фиксируем, кто сейчас отвечал
+
+        if (isCorrect) {
+            activeQ.status = 'correct';
+            currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
+            teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
+            
+            if (categoryQs.every(q => q.status !== 'open')) {
+                const s = document.getElementById(`score-${actingTeam}`);
+                s.innerText = parseInt(s.innerText) + currentBank;
+                currentBank = 0; lockedCategory = null;
+                smartSwitch();
+            }
+            showAnswerState();
+        } else {
+            if (currentRound === 2) {
+                const s = document.getElementById(`score-${actingTeam}`);
+                s.innerText = parseInt(s.innerText) - qIdxInCat;
+            }
+            activeQ.tries += 1;
+            
+            if (activeQ.tries >= 2) {
+                activeQ.status = 'fail';
+                teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
+                teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
+                currentBank = 0; lockedCategory = null; 
+                smartSwitch(); 
+                showAnswerState();
+            } else {
+                // ПЕРВАЯ ОШИБКА — Замок вешается ИМЕННО той команде, которая только что отвечала
+                if (!teamLocks[actingTeam].includes(activeQ.Category)) {
+                    teamLocks[actingTeam].push(activeQ.Category);
+                }
+                currentBank = 0; 
+                lockedCategory = null; 
+                smartSwitch(); 
+                closeModal();
+            }
+        }
+        updateUI();
+        renderGrid();
+    }
 
     function showAnswerState() {
         document.getElementById('qText').style.display = 'none';
