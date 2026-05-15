@@ -259,7 +259,7 @@
 </div>
 
 <div id="qModal">
-	<div id="timer-container" style="position: absolute; top: 30px; right: 40px; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px; z-index: 100;">
+    <div id="timer-container" style="position: absolute; top: 30px; right: 40px; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px; z-index: 100;">
         <svg width="100" height="100" viewBox="0 0 100 100" style="transform: rotate(-90deg);">
             <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="transparent" />
             <circle id="timer-progress" cx="50" cy="50" r="40" stroke="var(--gold)" stroke-width="6" fill="transparent" 
@@ -267,6 +267,7 @@
         </svg>
         <div id="timer-text" style="position: absolute; font-size: 1.8rem; font-weight: 900; font-family: 'Montserrat', sans-serif; color: white;">00</div>
     </div>
+
     <div id="qText"></div>
     <div id="ansText" class="ans-text"></div>
 	<button id="repeatBtn" class="control-btn btn-repeat" onclick="replayMedia()">🔄 ПОВТОРИТЬ</button>
@@ -292,7 +293,7 @@
     let gameData = [], currentRound = 1, activeTeam = 0, currentBank = 0, activeQ = null;
     let lockedCategory = null, player = null, playerReady = false, monitorInterval = null;
     let teamLocks = [[], []];
-	let timerInterval = null;
+    let timerInterval = null;
 
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
@@ -346,7 +347,6 @@
             const btn = document.createElement('button');
             btn.className = 'category-btn';
             btn.disabled = isFinished || isLocked || isOtherCat;
-            // Текст темы теперь в span для центровки, а замок отдельно
             btn.innerHTML = `<span>${cat}</span>${isLocked ? '<div class="lock-icon">🔒</div>' : ''}`;
             btn.onclick = () => startQuestion(cat);
             grid.appendChild(btn);
@@ -381,25 +381,22 @@
 		} else if ((type === 'video' || type === 'audio' || type === 'silent_video') && playerReady) {
 			wrapper.style.display = 'block';
 			if (!isAns) repeatBtn.style.display = 'block';
-			//if (type === 'audio' && !isAns) placeholder.style.display = 'flex';
 			if (type === 'audio') wrapper.style.display = 'none';
 
 			const vId = url.includes('v=') ? url.split('v=')[1].split('&')[0] : url.split('be/')[1];
 			const sSec = parseInt(start) || 0;
 			const eSec = sSec + (parseInt(duration) || 30);
 
-			// Управление звуком
 			if (type === 'silent_video') {
 				player.mute();
 			} else {
 				player.unMute();
-				player.setVolume(100); // Устанавливаем громкость на 100% для видео и аудио
+				player.setVolume(100);
 			}
 
 			player.loadVideoById({ videoId: vId, startSeconds: sSec, endSeconds: eSec });
 			startEndMonitor(eSec);
 			
-			// Показываем бокс видео для обоих типов видео
 			if (type === 'video' || type === 'silent_video') {
 				setTimeout(() => { pBox.style.opacity = '1'; }, 500);
 			}
@@ -410,15 +407,12 @@
         if (activeQ) playMedia(activeQ.QType, activeQ.QMediaURL, activeQ.QStartTime, activeQ.QDuration);
     }
 
-	function getQuestionDuration(type, idx) {
-        // Проверяем медиа-тип вопроса
+    function getQuestionDuration(type, idx) {
         const isMedia = (type === 'video' || type === 'silent_video' || type === 'audio');
-        
         if (isMedia) {
             const mediaTimes = { 1: 20, 2: 25, 3: 30, 4: 40, 5: 50 };
             return mediaTimes[idx] || 30;
         } else {
-            // Для изображений (image) или текстовых (тип не указан)
             const textTimes = { 1: 15, 2: 20, 3: 25, 4: 40, 5: 50 };
             return textTimes[idx] || 25;
         }
@@ -426,14 +420,11 @@
 
     function runTimer(duration) {
         clearInterval(timerInterval);
-        
         const progressCircle = document.getElementById('timer-progress');
         const timerText = document.getElementById('timer-text');
-        const totalCircleLength = 251.2; // Длина окружности (2 * pi * r) при r=40
-        
+        const totalCircleLength = 251.2;
         let timeLeft = duration;
         
-        // Сброс анимации в начальное состояние
         progressCircle.style.stroke = "var(--gold)";
         progressCircle.style.strokeDashoffset = 0;
         timerText.innerText = timeLeft;
@@ -441,22 +432,16 @@
 
         timerInterval = setInterval(() => {
             timeLeft--;
-            
             if (timeLeft >= 0) {
                 timerText.innerText = timeLeft;
-                
-                // Вычисляем долю оставшегося пути круга
                 const offset = totalCircleLength - (timeLeft / duration) * totalCircleLength;
                 progressCircle.style.strokeDashoffset = offset;
-                
-                // Визуальный эффект: красим круг в красный за 5 секунд до конца
                 if (timeLeft <= 5) {
                     progressCircle.style.stroke = "var(--wrong)";
                     timerText.style.color = "var(--wrong)";
                 }
             } else {
                 clearInterval(timerInterval);
-                // Действие при завершении времени (например, симулируем неверный ответ)
                 if (document.getElementById('modalControls').style.display !== 'none') {
                     handleResult(false);
                 }
@@ -483,20 +468,18 @@
         document.getElementById('hint-wrong').innerHTML = currentRound === 1 ? `ПОТЕРЯ РЕЗЕРВА И ПЕРЕХОД ХОДА` : `-${qIdx} ИЗ БАНКА<br>ПОТЕРЯ РЕЗЕРВА И ПЕРЕХОД ХОДА`;
 
         document.getElementById('ansText').innerText = "ОТВЕТ: " + (q.Answer || "");
-		document.getElementById('qModal').style.display = 'flex';
+        document.getElementById('qModal').style.display = 'flex';
         playMedia(q.QType, q.QMediaURL, q.QStartTime, q.QDuration);
         renderGrid();
 
-        // АВТОМАТИЧЕСКИЙ СТАРТ ТАЙМЕРА
-        const duration = getQuestionDuration(q.QType, qIdxInCat); // Используем индекс текущего вопроса (1-5)
+        const duration = getQuestionDuration(q.QType, qIdx);
         runTimer(duration);
-    }
     }
 
     function handleResult(isCorrect) {
         const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
         const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
-        const actingTeam = activeTeam; // Фиксируем, кто сейчас отвечал
+        const actingTeam = activeTeam;
 
         if (isCorrect) {
             activeQ.status = 'correct';
@@ -525,7 +508,6 @@
                 smartSwitch(); 
                 showAnswerState();
             } else {
-                // ПЕРВАЯ ОШИБКА — Замок вешается ИМЕННО той команде, которая только что отвечала
                 if (!teamLocks[actingTeam].includes(activeQ.Category)) {
                     teamLocks[actingTeam].push(activeQ.Category);
                 }
@@ -540,7 +522,7 @@
     }
 
     function showAnswerState() {
-		clearInterval(timerInterval);
+        clearInterval(timerInterval);
         document.getElementById('qText').style.display = 'none';
         document.getElementById('modalControls').style.display = 'none';
         document.getElementById('ansText').style.display = 'block';
@@ -549,7 +531,7 @@
     }
 
 	function closeModal() {
-		clearInterval(timerInterval);
+        clearInterval(timerInterval);
 		if (player) player.stopVideo();
 		clearInterval(monitorInterval);
 		document.getElementById('qModal').style.display = 'none';
@@ -582,14 +564,12 @@
     }
 
 	function checkGameOver() {
-		// Проверяем, остались ли открытые вопросы во всех раундах
 		const anyQuestionsLeft = gameData.some(q => q.status === 'open');
 		
 		if (!anyQuestionsLeft) {
 			const s0 = parseInt(document.getElementById('score-0').innerText);
 			const s1 = parseInt(document.getElementById('score-1').innerText);
 			
-			// Получаем актуальные названия команд
 			const name0 = document.querySelectorAll('.team-name')[0].innerText;
 			const name1 = document.querySelectorAll('.team-name')[1].innerText;
 			
@@ -598,10 +578,10 @@
 
 			if (s0 > s1) {
 				winText = `${name0}`;
-				scoreDisplay = `${s0}:${s1}`; // Больший счет слева
+				scoreDisplay = `${s0}:${s1}`;
 			} else if (s1 > s0) {
 				winText = `${name1}`;
-				scoreDisplay = `${s1}:${s0}`; // Больший счет слева
+				scoreDisplay = `${s1}:${s0}`;
 			} else {
 				winText = "БОЕВАЯ НИЧЬЯ!";
 				scoreDisplay = `${s0}:${s1}`;
@@ -611,7 +591,6 @@
 			document.getElementById('winnerScore').innerText = `СО СЧЕТОМ ${scoreDisplay}`;
 			document.getElementById('winScreen').style.display = 'flex';
 			
-			// Эффект конфетти
 			for(let i=0; i<60; i++) {
 				const c = document.createElement('div');
 				c.className = 'confetti';
@@ -632,18 +611,15 @@
 		const p0 = document.getElementById('panel-0');
 		const p1 = document.getElementById('panel-1');
 
-		// Просто переключаем класс, CSS сделает всё остальное с градиентом
 		p0.classList.toggle('active-team', activeTeam === 0);
 		p1.classList.toggle('active-team', activeTeam === 1);
 		
 		const other = activeTeam === 0 ? 1 : 0;
 		const showBank = currentBank > 0;
 
-		// Статусы и кнопки
 		document.getElementById(`status-${activeTeam}`).innerHTML = '<span class="badge-answering">ВАШ ХОД</span>';
 		document.getElementById(`status-${other}`).innerHTML = (currentRound === 2 && !lockedCategory) ? '<span class="badge-choosing">ВЫБИРАЕТ ДЛЯ СОПЕРНИКА</span>' : '';
 		
-		// Банк
 		document.getElementById(`bank-${activeTeam}`).style.visibility = showBank ? 'visible' : 'hidden';
 		document.getElementById(`bankBtn-${activeTeam}`).style.display = showBank ? 'block' : 'none';
 		document.getElementById(`bank-${other}`).style.visibility = 'hidden';
