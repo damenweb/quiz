@@ -103,21 +103,28 @@
 
         #qModal { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px; z-index: 1000; }
         
-        #yt-wrapper {
-            /*width: 640px; height: 360px;*/
-			/*width: 925px; height: 520px;*/
-			/*min-width: 720px; min-height: 540px;*/
-			width: 1200px; height: 900px;
-            overflow: hidden; position: relative;
-            border-radius: 15px; background: #000;
-            display: none; border: none; margin-bottom: 20px;
+		#yt-wrapper {
+            width: 70vw; /* Занимает 70% от ширины экрана */
+            aspect-ratio: 16 / 9; /* Жестко держит пропорции видео-формата */
+            max-width: 1200px; /* Больше этого размера на огромных мониторах не вырастет */
+            overflow: hidden; 
+            position: relative;
+            border-radius: 15px; 
+            background: #000;
+            display: none; 
+            border: none; 
+            margin-bottom: 20px;
         }
         #yt-player-box {
-            position: absolute; /*top: -15%; left: -15%;
-            width: 130%; height: 130%;*/
-			top: 0%; left: 0%;
-            width: 100%; height: 100%;
-            pointer-events: none; opacity: 0;
+            position: absolute; 
+            /* Вычисляем смещение от высоты контейнера, чтобы оно не плыло */
+            top: -60px; 
+            left: 0;
+            width: 100%; 
+            /* Делаем сам плеер выше на величину смещения, чтобы низ не обрезался */
+            height: calc(100% + 120px); 
+            pointer-events: none; 
+            opacity: 0;
             transition: opacity 0.3s ease;
         }
         #audio-placeholder {
