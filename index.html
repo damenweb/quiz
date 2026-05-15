@@ -381,7 +381,7 @@
 		} else if ((type === 'video' || type === 'audio' || type === 'silent_video') && playerReady) {
 			wrapper.style.display = 'block';
 			if (!isAns) repeatBtn.style.display = 'block';
-			if (type === 'audio') wrapper.style.display = 'none';
+			if (type === 'audio') placeholder.style.display = 'flex';
 
 			const vId = url.includes('v=') ? url.split('v=')[1].split('&')[0] : url.split('be/')[1];
 			const sSec = parseInt(start) || 0;
@@ -394,8 +394,21 @@
 				player.setVolume(100);
 			}
 
-			player.loadVideoById({ videoId: vId, startSeconds: sSec, endSeconds: eSec });
-			startEndMonitor(eSec);
+			// Жесткий сброс и принудительный старт для обхода зависаний API
+			try {
+				player.stopVideo(); 
+				player.loadVideoById({ videoId: vId, startSeconds: sSec, endSeconds: eSec });
+				
+				setTimeout(() => {
+					if (player && player.playVideo) {
+						player.playVideo();
+					}
+				}, 150);
+
+				startEndMonitor(eSec);
+			} catch (err) {
+				console.error("YouTube Player Error: ", err);
+			}
 			
 			if (type === 'video' || type === 'silent_video') {
 				setTimeout(() => { pBox.style.opacity = '1'; }, 500);
