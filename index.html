@@ -295,11 +295,16 @@
     let teamLocks = [[], []];
     let timerInterval = null;
 	let isTimerStarted = false;
+	const sounds = { 
+        timer: 'timer.mp3' 
+    };
 
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
-    
+	
+	function playAudio(type) { new Audio(sounds[type]).play().catch(() => {}); }
+	
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('yt-player', { 
             height: '100%', width: '100%',
@@ -461,6 +466,7 @@
                 }
             } else {
                 clearInterval(timerInterval);
+				playAudio('timer');
                 /*if (document.getElementById('modalControls').style.display !== 'none') {
                     handleResult(false);
                 }*/
