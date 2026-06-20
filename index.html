@@ -433,9 +433,9 @@
         const isMedia = (type === 'video' || type === 'silent_video' || type === 'audio');
         if (isMedia) {
             const mediaTimes = { 1: 10, 2: 15, 3: 20, 4: 30, 5: 40 };
-            return mediaTimes[idx] || 30;
+            return mediaTimes[idx] || 20;
         } else {
-            const textTimes = { 1: 10, 2: 15, 3: 20, 4: 30, 5: 40 };
+            const textTimes = { 1: 15, 2: 20, 3: 25, 4: 35, 5: 45 };
             return textTimes[idx] || 25;
         }
     }
