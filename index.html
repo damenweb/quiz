@@ -536,7 +536,7 @@
         const actingTeam = activeTeam;
 
         if (isCorrect) {
-			playAudio('pass');
+			//playAudio('pass');
             activeQ.status = 'correct';
             currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
             teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
@@ -547,9 +547,7 @@
                 currentBank = 0; lockedCategory = null;
                 smartSwitch();
             }
-			setTimeout(() => {
-                showAnswerState();
-            }, 1000);
+            showAnswerState();
         } else {
             if (currentRound === 2) {
                 const s = document.getElementById(`score-${actingTeam}`);
@@ -558,15 +556,13 @@
             activeQ.tries += 1;
             
             if (activeQ.tries >= 2) {
-                playAudio('fail');
+                //playAudio('fail');
 				activeQ.status = 'fail';
                 teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
                 teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
                 currentBank = 0; lockedCategory = null; 
                 smartSwitch(); 
-                setTimeout(() => {
-	                showAnswerState();
-	            }, 1000);
+                showAnswerState();
             } else {
                 if (!teamLocks[actingTeam].includes(activeQ.Category)) {
                     teamLocks[actingTeam].push(activeQ.Category);
