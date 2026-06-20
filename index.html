@@ -517,16 +517,11 @@
         });
         renderGrid();
 
-		// Проверяем: если это обычный текст или картинка, запускаем таймер через 5 секунд
+		// Проверяем: если это обычный текст или картинка, запускаем таймер немедленно
         const isAVMedia = (q.QType === 'video' || q.QType === 'silent_video' || q.QType === 'audio');
         if (!isAVMedia) {
-            setTimeout(() => {
-                // Проверяем, что окно вопроса всё ещё открыто (ведущий не нажал ВЕРНО/НЕВЕРНО досрочно)
-                if (!isTimerStarted && document.getElementById('modalControls').style.display !== 'none') {
-                    runTimer(duration);
-                    isTimerStarted = true;
-                }
-            }, 5000); // 5000 миллисекунд = 5 секунд задержки
+            runTimer(duration);
+            isTimerStarted = true;
         }
     }
 
