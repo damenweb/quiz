@@ -295,8 +295,10 @@
     let teamLocks = [[], []];
     let timerInterval = null;
 	let isTimerStarted = false;
-	const sounds = { 
-        timer: 'timer.mp3' 
+    const sounds = { 
+        pass: 'pass.mp3'
+        fail: 'fail.mp3',
+        timer: 'timer.mp3'
     };
 
     const tag = document.createElement('script');
@@ -534,6 +536,7 @@
         const actingTeam = activeTeam;
 
         if (isCorrect) {
+			playAudio('pass');
             activeQ.status = 'correct';
             currentBank += (currentRound === 2 ? qIdxInCat * 2 : qIdxInCat);
             teamLocks[actingTeam] = teamLocks[actingTeam].filter(c => c !== activeQ.Category);
@@ -553,7 +556,8 @@
             activeQ.tries += 1;
             
             if (activeQ.tries >= 2) {
-                activeQ.status = 'fail';
+                playAudio('fail');
+				activeQ.status = 'fail';
                 teamLocks[0] = teamLocks[0].filter(c => c !== activeQ.Category);
                 teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
                 currentBank = 0; lockedCategory = null; 
