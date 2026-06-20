@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Викторина 1.1 © Collin</title>
+    <title>Викторина 1.2 © Collin</title>
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -294,6 +294,7 @@
     let lockedCategory = null, player = null, playerReady = false, monitorInterval = null;
     let teamLocks = [[], []];
     let timerInterval = null;
+	let isTimerStarted = false;
 
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
@@ -307,17 +308,18 @@
         });
     }
 
-    function startEndMonitor(endSec) {
-        clearInterval(monitorInterval);
-        monitorInterval = setInterval(() => {
-            if (player && player.getCurrentTime) {
-                if (player.getCurrentTime() >= endSec - 0.3) {
-                    document.getElementById('yt-player-box').style.opacity = '0';
-                    clearInterval(monitorInterval);
-                }
-            }
-        }, 100);
-    }
+	function startEndMonitor(endSec, onFinish) { // <-- добавлено , onFinish
+	    clearInterval(monitorInterval);
+	    monitorInterval = setInterval(() => {
+	        if (player && player.getCurrentTime) {
+	            if (player.getCurrentTime() >= endSec - 0.3) {
+	                document.getElementById('yt-player-box').style.opacity = '0';
+	                clearInterval(monitorInterval);
+	                if (onFinish) onFinish(); // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+	            }
+	        }
+	    }, 100);
+	}
 
     document.getElementById('fileInput').addEventListener('change', e => {
         const reader = new FileReader();
@@ -362,7 +364,7 @@
         });
     }
 
-	function playMedia(type, url, start, duration) {
+	function playMedia(type, url, start, duration, onFinish) {
 		const wrapper = document.getElementById('yt-wrapper');
 		const mBox = document.getElementById('mediaBox');
 		const pBox = document.getElementById('yt-player-box');
@@ -405,7 +407,7 @@
 					}
 				}, 150);
 
-				startEndMonitor(eSec);
+				startEndMonitor(eSec, onFinish); // <-- ПЕРЕДАЙТЕ onFinish СЮДА
 			} catch (err) {
 				console.error("YouTube Player Error: ", err);
 			}
@@ -433,6 +435,10 @@
 
     function runTimer(duration) {
         clearInterval(timerInterval);
+
+		// ДОБАВИТЬ ЭТУ СТРОКУ: Показываем таймер, когда отсчет реально начался
+        document.getElementById('timer-container').style.display = 'flex';
+		
         const progressCircle = document.getElementById('timer-progress');
         const timerText = document.getElementById('timer-text');
         const totalCircleLength = 251.2;
@@ -482,11 +488,33 @@
 
         document.getElementById('ansText').innerText = "ОТВЕТ: " + (q.Answer || "");
         document.getElementById('qModal').style.display = 'flex';
-        playMedia(q.QType, q.QMediaURL, q.QStartTime, q.QDuration);
+		
+		const duration = getQuestionDuration(q.QType, qIdx);
+
+        document.getElementById('timer-container').style.display = 'none';
+		// Сбрасываем визуальную часть таймера, чтобы цифры корректно отображались во время просмотра видео
+        document.getElementById('timer-text').innerText = duration;
+        document.getElementById('timer-progress').style.strokeDashoffset = 0;
+        document.getElementById('timer-progress').style.stroke = "var(--gold)";
+        document.getElementById('timer-text').style.color = "white";
+
+        isTimerStarted = false; // Обнуляем флаг перед каждым новым вопросом
+
+        // Передаем callback: таймер начнется только когда видео закончится (и если еще не был запущен)
+        playMedia(q.QType, q.QMediaURL, q.QStartTime, q.QDuration, () => {
+            if (!isTimerStarted) {
+                runTimer(duration);
+                isTimerStarted = true;
+            }
+        });
         renderGrid();
 
-        const duration = getQuestionDuration(q.QType, qIdx);
-        runTimer(duration);
+        // Проверяем: если это обычный текст или картинка, запускаем таймер немедленно
+        const isAVMedia = (q.QType === 'video' || q.QType === 'silent_video' || q.QType === 'audio');
+        if (!isAVMedia) {
+            runTimer(duration);
+            isTimerStarted = true;
+        }
     }
 
     function handleResult(isCorrect) {
@@ -536,6 +564,10 @@
 
     function showAnswerState() {
         clearInterval(timerInterval);
+
+		// ДОБАВИТЬ ЭТУ СТРОКУ: Убираем таймер на экране с ответом
+        document.getElementById('timer-container').style.display = 'none';
+		
         document.getElementById('qText').style.display = 'none';
         document.getElementById('modalControls').style.display = 'none';
         document.getElementById('ansText').style.display = 'block';
