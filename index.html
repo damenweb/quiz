@@ -547,7 +547,9 @@
                 currentBank = 0; lockedCategory = null;
                 smartSwitch();
             }
-            showAnswerState();
+			setTimeout(() => {
+                showAnswerState();
+            }, 1000);
         } else {
             if (currentRound === 2) {
                 const s = document.getElementById(`score-${actingTeam}`);
@@ -562,7 +564,9 @@
                 teamLocks[1] = teamLocks[1].filter(c => c !== activeQ.Category);
                 currentBank = 0; lockedCategory = null; 
                 smartSwitch(); 
-                showAnswerState();
+                setTimeout(() => {
+	                showAnswerState();
+	            }, 1000);
             } else {
                 if (!teamLocks[actingTeam].includes(activeQ.Category)) {
                     teamLocks[actingTeam].push(activeQ.Category);
