@@ -270,6 +270,7 @@
 
     <div id="qText"></div>
     <div id="ansText" class="ans-text"></div>
+	<button id="startMediaBtn" class="control-btn" style="background: var(--gold); color: black; display: none; margin-bottom: 20px;" onclick="triggerMedia()">🎬 ВКЛЮЧИТЬ МЕДИА</button>
 	<button id="repeatBtn" class="control-btn btn-repeat" onclick="replayMedia()">🔄 ПОВТОРИТЬ</button>
 	<div id="yt-wrapper">
         <div id="yt-shield"></div>
@@ -497,36 +498,63 @@
         document.getElementById('hint-wrong').innerHTML = currentRound === 1 ? `ПОТЕРЯ РЕЗЕРВА И ПЕРЕХОД ХОДА` : `-${qIdx} ИЗ БАНКА<br>ПОТЕРЯ РЕЗЕРВА И ПЕРЕХОД ХОДА`;
 
         document.getElementById('ansText').innerText = "ОТВЕТ: " + (q.Answer || "");
-        document.getElementById('qModal').style.display = 'flex';
-		
-		const duration = getQuestionDuration(q.QType, qIdx);
+		document.getElementById('qModal').style.display = 'flex';
+	    
+	    const duration = getQuestionDuration(q.QType, qIdx);
+	
+	    document.getElementById('timer-container').style.display = 'none';
+	    document.getElementById('timer-text').innerText = duration;
+	    document.getElementById('timer-progress').style.strokeDashoffset = 0;
+	    document.getElementById('timer-progress').style.stroke = "var(--gold)";
+	    document.getElementById('timer-text').style.color = "white";
+	
+	    isTimerStarted = false; // Обнуляем флаг перед каждым новым вопросом
+	
+	    // Очищаем медиа-контейнеры от старых раундов
+	    document.getElementById('mediaBox').innerHTML = '';
+	    document.getElementById('yt-wrapper').style.display = 'none';
+	    document.getElementById('repeatBtn').style.display = 'none';
+	
+	    // Проверяем, есть ли вообще ссылка на медиафайл в текущей строке
+	    const hasMedia = q.QMediaURL && q.QMediaURL !== "" && q.QMediaURL !== "undefined";
+	    const startMediaBtn = document.getElementById('startMediaBtn');
+	
+	    if (hasMedia) {
+	        startMediaBtn.style.display = 'inline-block'; // Ждем клика ведущего
+	    } else {
+	        startMediaBtn.style.display = 'none';
+	        runTimer(duration); // Если медиа нет (чистый текст), запускаем таймер мгновенно
+	        isTimerStarted = true;
+	    }
+	
+	    renderGrid();
+	}
 
-        document.getElementById('timer-container').style.display = 'none';
-		// Сбрасываем визуальную часть таймера, чтобы цифры корректно отображались во время просмотра видео
-        document.getElementById('timer-text').innerText = duration;
-        document.getElementById('timer-progress').style.strokeDashoffset = 0;
-        document.getElementById('timer-progress').style.stroke = "var(--gold)";
-        document.getElementById('timer-text').style.color = "white";
-
-        isTimerStarted = false; // Обнуляем флаг перед каждым новым вопросом
-
-        // Передаем callback: таймер начнется только когда видео закончится (и если еще не был запущен)
-        playMedia(q.QType, q.QMediaURL, q.QStartTime, q.QDuration, () => {
-            if (!isTimerStarted) {
-                runTimer(duration);
-                isTimerStarted = true;
-            }
-        });
-        renderGrid();
-
-		// Проверяем: если это обычный текст или картинка, запускаем таймер немедленно
-        const isAVMedia = (q.QType === 'video' || q.QType === 'silent_video' || q.QType === 'audio');
-        if (!isAVMedia) {
-            runTimer(duration);
-            isTimerStarted = true;
-        }
-    }
-
+	function triggerMedia() {
+	    if (!activeQ) return;
+	    document.getElementById('startMediaBtn').style.display = 'none';
+	    
+	    const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
+	    const qIdx = categoryQs.indexOf(activeQ) + 1;
+	    const duration = getQuestionDuration(activeQ.QType, qIdx);
+	
+	    // Запуск воспроизведения медиа
+	    playMedia(activeQ.QType, activeQ.QMediaURL, activeQ.QStartTime, activeQ.QDuration, () => {
+	        // Callback для видео/аудио: таймер запустится автоматически, когда контент доиграет до конца
+	        if (!isTimerStarted) {
+	            runTimer(duration);
+	            isTimerStarted = true;
+	        }
+	    });
+	
+	    // Для картинок жесткого окончания стрима нет, поэтому запускаем таймер параллельно с открытием картинки
+	    const isAVMedia = (activeQ.QType === 'video' || activeQ.QType === 'silent_video' || activeQ.QType === 'audio');
+	    if (!isAVMedia) {
+	        runTimer(duration);
+	        isTimerStarted = true;
+	    }
+	}
+	
     function handleResult(isCorrect) {
         const categoryQs = gameData.filter(d => d.Category === activeQ.Category && d.Round == currentRound);
         const qIdxInCat = categoryQs.indexOf(activeQ) + 1;
@@ -579,6 +607,7 @@
 
 		// ДОБАВИТЬ ЭТУ СТРОКУ: Убираем таймер на экране с ответом
         document.getElementById('timer-container').style.display = 'none';
+		document.getElementById('startMediaBtn').style.display = 'none';
 		
         document.getElementById('qText').style.display = 'none';
         document.getElementById('modalControls').style.display = 'none';
