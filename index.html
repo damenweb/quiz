@@ -291,6 +291,7 @@
 
 <script>
     let gameData = [], currentRound = 1, activeTeam = 0, currentBank = 0, activeQ = null;
+	let lastChosenCategory = null;
     let lockedCategory = null, player = null, playerReady = false, monitorInterval = null;
     let teamLocks = [[], []];
     let timerInterval = null;
@@ -344,23 +345,40 @@
         reader.readAsArrayBuffer(e.target.files[0]);
     });
 
-    function renderGrid() {
-        const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
-        const roundData = gameData.filter(d => d.Round == currentRound);
-        const categories = [...new Set(roundData.map(d => d.Category))];
-
-        categories.forEach(cat => {
-            const catQs = roundData.filter(d => d.Category === cat).slice(0, 5);
-            const isFinished = catQs.every(q => q.status === 'correct' || q.status === 'fail');
-            const isLocked = teamLocks[activeTeam].includes(cat);
-            const isOtherCat = (lockedCategory !== null && lockedCategory !== cat);
-            
-            const btn = document.createElement('button');
-            btn.className = 'category-btn';
-            btn.disabled = isFinished || isLocked || isOtherCat;
-            btn.innerHTML = `<span>${cat}</span>${isLocked ? '<div class="lock-icon">🔒</div>' : ''}`;
-            btn.onclick = () => startQuestion(cat);
-            grid.appendChild(btn);
+	function renderGrid() {
+	    const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
+	    const roundData = gameData.filter(d => d.Round == currentRound);
+	    const categories = [...new Set(roundData.map(d => d.Category))];
+	
+	    // 1. Считаем, сколько вообще тем сейчас доступно для выбора текущей команде
+	    const availableCats = categories.filter(cat => {
+	        const catQs = roundData.filter(d => d.Category === cat);
+	        const isFinished = catQs.every(q => q.status === 'correct' || q.status === 'fail');
+	        const isLocked = teamLocks[activeTeam].includes(cat);
+	        return !isFinished && !isLocked;
+	    });
+	    
+	    // Включаем блокировку только во 2-м раунде и только если есть альтернативный выбор
+	    const shouldBlockLastChosen = currentRound === 2 && lastChosenCategory !== null && availableCats.length > 1;
+	
+	    categories.forEach(cat => {
+	        const catQs = roundData.filter(d => d.Category === cat).slice(0, 5);
+	        const isFinished = catQs.every(q => q.status === 'correct' || q.status === 'fail');
+	        const isLocked = teamLocks[activeTeam].includes(cat);
+	        const isOtherCat = (lockedCategory !== null && lockedCategory !== cat);
+	        
+	        // Проверяем, совпадает ли эта тема с той, что была на прошлом ходу
+	        const isLastChosenBlocked = shouldBlockLastChosen && cat === lastChosenCategory;
+	        
+	        const btn = document.createElement('button');
+	        btn.className = 'category-btn';
+	        
+	        // Кнопка блокируется по старым правилам ИЛИ если сработало ограничение на повтор темы
+	        btn.disabled = isFinished || isLocked || isOtherCat || isLastChosenBlocked;
+	        
+	        btn.innerHTML = `<span>${cat}</span>${isLocked ? '<div class="lock-icon">🔒</div>' : ''}`;
+	        btn.onclick = () => startQuestion(cat);
+	        grid.appendChild(btn);
 
             catQs.forEach((q, i) => {
                 const cell = document.createElement('div');
@@ -479,7 +497,8 @@
     }
 
     function startQuestion(catName) {
-        const opponent = activeTeam === 0 ? 1 : 0;
+        lastChosenCategory = catName;
+		const opponent = activeTeam === 0 ? 1 : 0;
         teamLocks[opponent] = teamLocks[opponent].filter(c => c !== catName);
         
         const q = gameData.find(d => d.Round == currentRound && d.Category === catName && d.status === 'open');
@@ -712,8 +731,9 @@
             const s1 = parseInt(document.getElementById('score-1').innerText);
             activeTeam = s0 <= s1 ? 0 : 1;
         }
-        currentRound = r; currentBank = 0; lockedCategory = null; teamLocks = [[], []];
-        updateUI(); renderGrid();
+		currentRound = r; currentBank = 0; lockedCategory = null; teamLocks = [[], []];
+		lastChosenCategory = null; // <-- Добавить эту строку
+		updateUI(); renderGrid();
     }
 
 	const helpData = 
