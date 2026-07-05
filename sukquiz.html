@@ -185,18 +185,20 @@
         </div>
     </main>
 
-    <script>
-        // ИНИЦИАЛИЗАЦИЯ SUPABASE (ВСТАВЬ СВОИ ДАННЫЕ)
+	<script>
+        // ИНИЦИАЛИЗАЦИЯ SUPABASE (URL взял с твоего скриншота)
         const SUPABASE_URL = 'https://qibgsqqkeooommyjkyal.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_r2xW5JuACeQ9wf4GlOG1JQ_hFqeVvXo';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_KEY = 'ТВОЙ_PUBLISHABLE_KEY'; // Вставь сюда тот длинный ключ, который начинается с sb_publishable...
+        
+        // Называем переменную db, чтобы не конфликтовать с самой библиотекой
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const app = {
             currentUser: null,
             players: [],
             queue: [],
             gameState: {},
-            questionsData: [], // Локально у админа
+            questionsData: [], 
             currentQIndex: 0,
 
             async init() {
@@ -217,7 +219,7 @@
                 const err = document.getElementById('login-error');
                 err.innerText = "Проверка...";
                 
-                const { data, error } = await supabase
+                const { data, error } = await db
                     .from('quiz_users')
                     .select('*')
                     .eq('login', login)
@@ -235,11 +237,10 @@
                 localStorage.setItem('quiz_login', login);
                 localStorage.setItem('quiz_pass', password);
                 
-                // Если зашел игрок, добавляем его в таблицу очков (если его там нет)
                 if (this.currentUser.role === 'player') {
-                    const { data: existingPlayer } = await supabase.from('quiz_players').select('*').eq('login', login).single();
+                    const { data: existingPlayer } = await db.from('quiz_players').select('*').eq('login', login).single();
                     if (!existingPlayer) {
-                        await supabase.from('quiz_players').insert([{ login: login, name: login }]);
+                        await db.from('quiz_players').insert([{ login: login, name: login }]);
                     }
                 }
 
@@ -257,17 +258,13 @@
                 if (isAdmin) document.getElementById('btn-show-answer').style.display = 'inline-block';
             },
 
-            // --- REALTIME & DATA LOADING ---
             async loadInitialState() {
-                // Загружаем стейт игры
-                const { data: stateData } = await supabase.from('quiz_state').select('*').eq('id', 1).single();
+                const { data: stateData } = await db.from('quiz_state').select('*').eq('id', 1).single();
                 if (stateData) this.updateQuestionUI(stateData);
 
-                // Загружаем игроков
                 await this.fetchPlayers();
 
-                // Загружаем очередь
-                const { data: queueData } = await supabase.from('quiz_queue').select('*').order('created_at', { ascending: true });
+                const { data: queueData } = await db.from('quiz_queue').select('*').order('created_at', { ascending: true });
                 if (queueData) {
                     this.queue = queueData;
                     this.renderPlayers();
@@ -276,7 +273,7 @@
             },
 
             async fetchPlayers() {
-                const { data } = await supabase.from('quiz_players').select('*');
+                const { data } = await db.from('quiz_players').select('*');
                 if (data) {
                     this.players = data;
                     this.renderPlayers();
@@ -284,23 +281,18 @@
             },
 
             subscribeRealtime() {
-                // Слушаем изменения в таблице State
-                supabase.channel('public:quiz_state').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'quiz_state' }, payload => {
+                db.channel('public:quiz_state').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'quiz_state' }, payload => {
                     this.updateQuestionUI(payload.new);
                 }).subscribe();
 
-                // Слушаем изменения в игроках (баллы)
-                supabase.channel('public:quiz_players').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_players' }, payload => {
+                db.channel('public:quiz_players').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_players' }, payload => {
                     this.fetchPlayers();
                 }).subscribe();
 
-                // Слушаем очередь (кнопки)
-                supabase.channel('public:quiz_queue').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_queue' }, async payload => {
-                    // Обновляем локальный массив очереди
-                    const { data } = await supabase.from('quiz_queue').select('*').order('created_at', { ascending: true });
+                db.channel('public:quiz_queue').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_queue' }, async payload => {
+                    const { data } = await db.from('quiz_queue').select('*').order('created_at', { ascending: true });
                     this.queue = data || [];
                     
-                    // Если это было добавление в очередь (кто-то нажал кнопку) - играем звук
                     if (payload.eventType === 'INSERT') {
                         try {
                             const audio = new Audio(`${payload.new.login}.mp3`);
@@ -313,7 +305,6 @@
                 }).subscribe();
             },
 
-            // --- ЛОГИКА ВОПРОСОВ И UI ---
             updateQuestionUI(state) {
                 this.gameState = state;
                 const textEl = document.getElementById('q-text');
@@ -337,7 +328,6 @@
                 }
             },
 
-            // --- АДМИН: Excel и Управление ---
             handleFileUpload(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -360,21 +350,20 @@
                 if (newIndex >= 0 && newIndex < this.questionsData.length) {
                     this.currentQIndex = newIndex;
                     this.pushStateToDB();
-                    // При переключении вопроса очищаем очередь (по желанию)
-                    supabase.from('quiz_queue').delete().neq('login', 'non_existent_row').then();
+                    db.from('quiz_queue').delete().neq('login', 'non_existent_row').then();
                 }
             },
 
             toggleAnswer() {
                 this.gameState.show_answer = !this.gameState.show_answer;
-                supabase.from('quiz_state').update({ show_answer: this.gameState.show_answer }).eq('id', 1).then();
+                db.from('quiz_state').update({ show_answer: this.gameState.show_answer }).eq('id', 1).then();
             },
 
             pushStateToDB() {
                 const q = this.questionsData[this.currentQIndex];
                 document.getElementById('header-status').innerText = `ВОПРОС ${this.currentQIndex + 1} / ${this.questionsData.length}`;
                 
-                supabase.from('quiz_state').update({
+                db.from('quiz_state').update({
                     q_text: q['Вопрос'] || '',
                     q_img: q['Картинка вопроса'] || null,
                     a_text: q['Ответ'] || '',
@@ -383,33 +372,30 @@
                 }).eq('id', 1).then();
             },
 
-            // --- АДМИН: Управление игроками ---
             async addManualPlayer() {
                 const name = prompt("Имя игрока:");
                 if (name) {
                     const login = 'manual_' + Date.now();
-                    await supabase.from('quiz_players').insert([{ login: login, name: name, is_manual: true }]);
+                    await db.from('quiz_players').insert([{ login: login, name: name, is_manual: true }]);
                 }
             },
 
             async updateScore(login, delta) {
                 const p = this.players.find(pl => pl.login === login);
                 if (p) {
-                    await supabase.from('quiz_players').update({ score: p.score + delta }).eq('login', login);
+                    await db.from('quiz_players').update({ score: p.score + delta }).eq('login', login);
                 }
             },
 
             async removeFromQueue(login) {
-                await supabase.from('quiz_queue').delete().eq('login', login);
+                await db.from('quiz_queue').delete().eq('login', login);
             },
 
-            // --- ИГРОК: Кнопка ---
             async hitBuzzer() {
-                if (this.queue.find(q => q.login === this.currentUser.login)) return; // Уже в очереди
+                if (this.queue.find(q => q.login === this.currentUser.login)) return;
                 
-                // Деактивируем локально сразу для отклика
                 document.getElementById('btn-buzzer').disabled = true;
-                await supabase.from('quiz_queue').insert([{ login: this.currentUser.login }]);
+                await db.from('quiz_queue').insert([{ login: this.currentUser.login }]);
             },
 
             checkBuzzerState() {
@@ -421,34 +407,30 @@
                 btn.style.background = inQueue ? "#475569" : "#ef4444";
             },
 
-            // --- РЕНДЕР ИГРОКОВ В САЙДБАРЕ ---
             renderPlayers() {
                 const container = document.getElementById('players-container');
                 container.innerHTML = '';
                 
                 const isAdmin = this.currentUser.role === 'admin';
                 
-                // Сортировка: У игроков по баллам. У админа: сначала реальные, потом ручные по алфавиту (или как пришли из БД)
                 let displayPlayers = [...this.players];
                 if (!isAdmin) {
                     displayPlayers.sort((a, b) => b.score - a.score);
                 }
 
                 displayPlayers.forEach(p => {
-                    // Проверка позиции в очереди
                     const queueIndex = this.queue.findIndex(q => q.login === p.login);
                     let queueClass = '';
                     let adminKickBtn = '';
 
                     if (queueIndex === 0) {
-                        queueClass = 'queue-active'; // Первый отвечает
+                        queueClass = 'queue-active';
                         if (isAdmin) adminKickBtn = `<button class="btn-kick" onclick="app.removeFromQueue('${p.login}')">Убрать отвечающего</button>`;
                     } else if (queueIndex > 0) {
-                        queueClass = 'queue-waiting'; // Остальные ждут
+                        queueClass = 'queue-waiting';
                         if (isAdmin) adminKickBtn = `<button class="btn-kick" style="background:#f59e0b;" onclick="app.removeFromQueue('${p.login}')">Убрать из ожидания</button>`;
                     }
 
-                    // Кнопки управления баллами только для админа
                     let controls = isAdmin ? `
                         <div class="score-actions">
                             <button class="btn-score btn-minus" onclick="app.updateScore('${p.login}', -1)">-1</button>
@@ -471,7 +453,6 @@
             }
         };
 
-        // Запуск
         window.onload = () => app.init();
     </script>
 </body>
