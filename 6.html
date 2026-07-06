@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер</title>
+    <title>Самый Умный Коднеймсер 2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -167,122 +167,127 @@
         }
 
         /* =========================================
-           ПЕРЕРАБОТАННЫЙ ИНТЕРФЕЙС ИГРОКА (ПК и Мобилка)
+           ОПТИМИЗИРОВАННЫЙ ИНТЕРФЕЙС ИГРОКА (ИСПРАВЛЕННЫЙ)
            ========================================= */
 
-        /* Делаем вертикальную центровку всего контента для игроков */
         body:not(.is-admin) {
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            padding: 20px;
+            padding: 15px;
+            overflow: hidden; /* Убираем глобальный скролл экрана */
         }
 
-        /* Окно с игроками по центру */
-        body:not(.is-admin) .sidebar {
+        /* Разворачиваем структуру, чтобы выстроить элементы через flex-order */
+        body:not(.is-admin) .main-content {
+            display: contents;
+        }
+
+        /* Кнопка "Выйти" — аккуратная, сверху, по центру */
+        body:not(.is-admin) .top-bar {
+            order: 1;
             width: 100%;
-            max-width: 500px;
-            height: 50vh; /* Занимает ровно половину высоты для скролла */
+            max-width: 420px;
+            background: transparent;
+            border: none;
+            padding: 0 0 12px 0;
+            display: flex;
+            justify-content: center;
+        }
+        body:not(.is-admin) .top-bar .btn-score {
+            padding: 8px 24px;
+            font-size: 0.95rem;
+            background: #334155;
+            border-radius: 6px;
+        }
+
+        /* Полностью скрываем всё лишнее */
+        body:not(.is-admin) .question-area,
+        body:not(.is-admin) #header-status,
+        body:not(.is-admin) .admin-only {
+            display: none !important;
+        }
+
+        /* Компактный список игроков (Лидерборд) по центру */
+        body:not(.is-admin) .sidebar {
+            order: 2;
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            max-height: calc(100vh - 230px); /* Выделяем максимум места под 8+ игроков */
             min-width: unset;
             border: none;
             background: transparent;
             padding: 0;
-            margin-bottom: 40px;
-            z-index: 1;
+            margin-bottom: 15px;
+        }
+        body:not(.is-admin) .players-scroll {
+            gap: 6px; /* Минимальный зазор между карточками */
         }
 
-        /* Контейнер для кнопки */
-        body:not(.is-admin) .main-content {
-            width: 100%;
-            max-width: 500px;
-            flex-grow: 0;
-            background: transparent;
-            display: flex;
-            justify-content: center;
+        /* Компактные карточки игроков, чтобы все 8 штук влезали без скролла */
+        body:not(.is-admin) .player-card {
+            padding: 8px 16px;
+            background: rgba(51, 65, 85, 0.45);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin-bottom: 0;
         }
+        body:not(.is-admin) .player-header { margin: 0; }
+        body:not(.is-admin) .player-name { font-size: 1.1rem; letter-spacing: 0.5px; }
+        body:not(.is-admin) .player-score { font-size: 1.5rem; color: var(--accent-lightblue); }
 
-        /* Прячем вопросы и статус-бар (как вы и просили, оставляем только игроков и кнопку) */
-        body:not(.is-admin) .question-area,
-        body:not(.is-admin) #header-status {
-            display: none !important;
-        }
-
-        /* Кнопку "Выйти" оставляем, но делаем её незаметной в правом верхнем углу */
-        body:not(.is-admin) .top-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: transparent;
-            border: none;
-            padding: 15px 20px;
-            justify-content: flex-end;
-            z-index: 100;
-        }
-
+        /* Зона кнопки "Есть ответ" в самом низу */
         body:not(.is-admin) .action-area {
+            order: 3;
             background: transparent;
             padding: 0;
             width: 100%;
+            max-width: 420px;
+            display: flex;
+            justify-content: center;
+            margin-top: auto; /* Мягко прижимает к низу экрана */
+            padding-bottom: 10px;
         }
 
-        /* Дизайн БОЛЬШОЙ КРУГЛОЙ кнопки для игроков */
+        /* Идеальный размер круглой тактильной кнопки */
         body:not(.is-admin) .btn-buzzer {
-            width: 250px;
-            height: 250px;
-            border-radius: 50%; /* Делает кнопку круглой */
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
             margin: 0 auto;
-            padding: 20px;
-            font-size: 2.2rem;
+            padding: 10px;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            line-height: 1.1;
-            box-shadow: 0 15px 0 #991b1b, 0 25px 30px rgba(0,0,0,0.5);
+            line-height: 1.2;
+            box-shadow: 0 8px 0 #991b1b, 0 15px 25px rgba(0,0,0,0.4);
             transition: all 0.1s;
         }
-
-        /* Эффект нажатия (кнопка "утапливается") */
         body:not(.is-admin) .btn-buzzer:active {
-            transform: translateY(15px);
-            box-shadow: 0 0 0 #991b1b, 0 10px 15px rgba(0,0,0,0.5);
+            transform: translateY(8px);
+            box-shadow: 0 0 0 #991b1b, 0 5px 10px rgba(0,0,0,0.4);
         }
-
-        /* Дизайн кнопки, когда игрок уже нажал (в очереди) */
         body:not(.is-admin) .btn-buzzer:disabled {
             background: #334155;
-            box-shadow: 0 15px 0 #1e293b, 0 25px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 0 #1e293b, 0 15px 25px rgba(0,0,0,0.4);
             color: #94a3b8;
-            transform: translateY(5px);
+            transform: translateY(4px);
         }
 
-        /* Улучшенные, более крупные карточки игроков для таблицы результатов */
-        body:not(.is-admin) .player-card {
-            padding: 15px 20px;
-            background: rgba(51, 65, 85, 0.6);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 8px;
-        }
-        body:not(.is-admin) .player-header { margin: 0; }
-        body:not(.is-admin) .player-name { font-size: 1.5rem; }
-        body:not(.is-admin) .player-score { font-size: 2.2rem; color: var(--accent-lightblue); }
-
-        /* Адаптация под мобильные устройства */
-        @media (max-width: 768px) {
-            body:not(.is-admin) .btn-buzzer {
-                width: 200px;
-                height: 200px;
-                font-size: 1.8rem;
-            }
-            body:not(.is-admin) .sidebar {
-                height: 45vh;
-                margin-bottom: 20px;
-            }
-            body:not(.is-admin) .player-name { font-size: 1.2rem; }
-            body:not(.is-admin) .player-score { font-size: 1.8rem; }
+        /* Дополнительный адаптив для экстремально маленьких экранов */
+        @media (max-width: 390px) {
+            body:not(.is-admin) { padding: 10px; }
+            body:not(.is-admin) .sidebar { max-height: calc(100vh - 190px); margin-bottom: 10px; }
+            body:not(.is-admin) .player-card { padding: 6px 12px; }
+            body:not(.is-admin) .player-name { font-size: 1rem; }
+            body:not(.is-admin) .player-score { font-size: 1.3rem; }
+            body:not(.is-admin) .btn-buzzer { width: 115px; height: 115px; font-size: 0.95rem; box-shadow: 0 6px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.4); }
+            body:not(.is-admin) .btn-buzzer:disabled { box-shadow: 0 6px 0 #1e293b; }
         }
     </style>
 </head>
