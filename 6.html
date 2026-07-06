@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер 4</title>
+    <title>Самый Умный Коднеймсер</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -164,6 +164,125 @@
             .btn-score { font-size: 0.8rem; padding: 6px 0; }
             .btn-buzzer { padding: 20px; font-size: 1.5rem; }
             .admin-preview { padding: 10px; }
+        }
+
+        /* =========================================
+           ПЕРЕРАБОТАННЫЙ ИНТЕРФЕЙС ИГРОКА (ПК и Мобилка)
+           ========================================= */
+
+        /* Делаем вертикальную центровку всего контента для игроков */
+        body:not(.is-admin) {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+        }
+
+        /* Окно с игроками по центру */
+        body:not(.is-admin) .sidebar {
+            width: 100%;
+            max-width: 500px;
+            height: 50vh; /* Занимает ровно половину высоты для скролла */
+            min-width: unset;
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 40px;
+            z-index: 1;
+        }
+
+        /* Контейнер для кнопки */
+        body:not(.is-admin) .main-content {
+            width: 100%;
+            max-width: 500px;
+            flex-grow: 0;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Прячем вопросы и статус-бар (как вы и просили, оставляем только игроков и кнопку) */
+        body:not(.is-admin) .question-area,
+        body:not(.is-admin) #header-status {
+            display: none !important;
+        }
+
+        /* Кнопку "Выйти" оставляем, но делаем её незаметной в правом верхнем углу */
+        body:not(.is-admin) .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 15px 20px;
+            justify-content: flex-end;
+            z-index: 100;
+        }
+
+        body:not(.is-admin) .action-area {
+            background: transparent;
+            padding: 0;
+            width: 100%;
+        }
+
+        /* Дизайн БОЛЬШОЙ КРУГЛОЙ кнопки для игроков */
+        body:not(.is-admin) .btn-buzzer {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%; /* Делает кнопку круглой */
+            margin: 0 auto;
+            padding: 20px;
+            font-size: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1;
+            box-shadow: 0 15px 0 #991b1b, 0 25px 30px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+
+        /* Эффект нажатия (кнопка "утапливается") */
+        body:not(.is-admin) .btn-buzzer:active {
+            transform: translateY(15px);
+            box-shadow: 0 0 0 #991b1b, 0 10px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Дизайн кнопки, когда игрок уже нажал (в очереди) */
+        body:not(.is-admin) .btn-buzzer:disabled {
+            background: #334155;
+            box-shadow: 0 15px 0 #1e293b, 0 25px 30px rgba(0,0,0,0.5);
+            color: #94a3b8;
+            transform: translateY(5px);
+        }
+
+        /* Улучшенные, более крупные карточки игроков для таблицы результатов */
+        body:not(.is-admin) .player-card {
+            padding: 15px 20px;
+            background: rgba(51, 65, 85, 0.6);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+        }
+        body:not(.is-admin) .player-header { margin: 0; }
+        body:not(.is-admin) .player-name { font-size: 1.5rem; }
+        body:not(.is-admin) .player-score { font-size: 2.2rem; color: var(--accent-lightblue); }
+
+        /* Адаптация под мобильные устройства */
+        @media (max-width: 768px) {
+            body:not(.is-admin) .btn-buzzer {
+                width: 200px;
+                height: 200px;
+                font-size: 1.8rem;
+            }
+            body:not(.is-admin) .sidebar {
+                height: 45vh;
+                margin-bottom: 20px;
+            }
+            body:not(.is-admin) .player-name { font-size: 1.2rem; }
+            body:not(.is-admin) .player-score { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -419,21 +538,17 @@
                         const workbook = XLSX.read(data, {type: 'array'});
                         const sheet = workbook.Sheets[workbook.SheetNames[0]];
                         
-                        // Читаем как массив массивов (игнорируем названия заголовков)
                         const rawData = XLSX.utils.sheet_to_json(sheet, {header: 1});
                         
-                        // Отфильтровываем пустые строки
                         const validRows = rawData.filter(row => row.length > 0 && row.some(cell => cell !== undefined && cell !== null && cell !== ''));
                         
                         if (validRows.length > 1) {
-                            // Пропускаем первую строку с заголовками и мапим по индексам колонок
                             this.questionsData = validRows.slice(1).map(row => {
                                 let qTxt = row[0] != null ? String(row[0]) : '';
                                 let qImg = row[1] && String(row[1]).startsWith('http') ? String(row[1]) : '';
                                 let aTxt = row[2] != null ? String(row[2]) : '';
                                 let aImg = row[3] && String(row[3]).startsWith('http') ? String(row[3]) : '';
 
-                                // Резервный вариант, если ответ лежит во 2-й колонке (нет картинок)
                                 if (!aTxt && row[1] != null && !String(row[1]).startsWith('http')) {
                                     aTxt = String(row[1]);
                                     qImg = ''; 
@@ -489,7 +604,6 @@
                     show_answer: false
                 };
 
-                // Оптимистичное обновление UI (сразу меняем экран, не дожидаясь ответа сервера)
                 this.updateQuestionUI(newState);
                 
                 db.from('quiz_state').update(newState).eq('id', 1).then();
@@ -517,12 +631,10 @@
             async deletePlayer(login) {
                 if (!confirm("Вы уверены, что хотите полностью удалить этого игрока из игры?")) return;
                 
-                // Удаляем локально для быстроты интерфейса
                 this.players = this.players.filter(p => p.login !== login);
                 this.queue = this.queue.filter(q => q.login !== login);
                 this.renderPlayers();
 
-                // Отправляем запросы на удаление в БД
                 await db.from('quiz_queue').delete().eq('login', login);
                 await db.from('quiz_players').delete().eq('login', login);
             },
