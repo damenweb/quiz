@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер 2</title>
+    <title>Самый Умный Коднеймсер 4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -167,127 +167,218 @@
         }
 
         /* =========================================
-           ОПТИМИЗИРОВАННЫЙ ИНТЕРФЕЙС ИГРОКА (ИСПРАВЛЕННЫЙ)
+           НЕОНОВЫЙ ИНТЕРФЕЙС ИГРОКА ДЛЯ IOS И ПК (БЕЗ СКРОЛЛА)
            ========================================= */
 
         body:not(.is-admin) {
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
+            position: relative;
+            width: 100vw;
+            height: 100dvh; /* Динамическая высота iOS против багов Safari */
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            padding: 15px;
-            overflow: hidden; /* Убираем глобальный скролл экрана */
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
         }
 
-        /* Разворачиваем структуру, чтобы выстроить элементы через flex-order */
+        /* Полностью изолируем структуру, отключая дефолтные flex-свойства */
+        body:not(.is-admin) .sidebar,
         body:not(.is-admin) .main-content {
-            display: contents;
-        }
-
-        /* Кнопка "Выйти" — аккуратная, сверху, по центру */
-        body:not(.is-admin) .top-bar {
-            order: 1;
-            width: 100%;
-            max-width: 420px;
             background: transparent;
             border: none;
-            padding: 0 0 12px 0;
-            display: flex;
-            justify-content: center;
-        }
-        body:not(.is-admin) .top-bar .btn-score {
-            padding: 8px 24px;
-            font-size: 0.95rem;
-            background: #334155;
-            border-radius: 6px;
+            padding: 0;
+            margin: 0;
         }
 
-        /* Полностью скрываем всё лишнее */
+        /* Прячем ненужные для игрока элементы */
         body:not(.is-admin) .question-area,
         body:not(.is-admin) #header-status,
         body:not(.is-admin) .admin-only {
             display: none !important;
         }
 
-        /* Компактный список игроков (Лидерборд) по центру */
-        body:not(.is-admin) .sidebar {
-            order: 2;
+        /* 1. Кнопка "Выйти" — Фиксировано сверху с учетом безопасной зоны челки */
+        body:not(.is-admin) .top-bar {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
             width: 100%;
             max-width: 420px;
-            height: auto;
-            max-height: calc(100vh - 230px); /* Выделяем максимум места под 8+ игроков */
-            min-width: unset;
-            border: none;
-            background: transparent;
-            padding: 0;
-            margin-bottom: 15px;
-        }
-        body:not(.is-admin) .players-scroll {
-            gap: 6px; /* Минимальный зазор между карточками */
-        }
-
-        /* Компактные карточки игроков, чтобы все 8 штук влезали без скролла */
-        body:not(.is-admin) .player-card {
-            padding: 8px 16px;
-            background: rgba(51, 65, 85, 0.45);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            margin-bottom: 0;
-        }
-        body:not(.is-admin) .player-header { margin: 0; }
-        body:not(.is-admin) .player-name { font-size: 1.1rem; letter-spacing: 0.5px; }
-        body:not(.is-admin) .player-score { font-size: 1.5rem; color: var(--accent-lightblue); }
-
-        /* Зона кнопки "Есть ответ" в самом низу */
-        body:not(.is-admin) .action-area {
-            order: 3;
-            background: transparent;
-            padding: 0;
-            width: 100%;
-            max-width: 420px;
+            height: calc(50px + env(safe-area-inset-top));
+            padding-top: env(safe-area-inset-top);
             display: flex;
             justify-content: center;
-            margin-top: auto; /* Мягко прижимает к низу экрана */
-            padding-bottom: 10px;
+            align-items: center;
+            background: transparent;
+            border: none;
+            z-index: 999;
+        }
+        body:not(.is-admin) .top-bar .btn-score {
+            padding: 6px 20px;
+            font-size: 0.9rem;
+            background: #334155;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-main);
+            cursor: pointer;
         }
 
-        /* Идеальный размер круглой тактильной кнопки */
+        /* 2. Контейнер Лидерборда — Ровно по центру, авто-высота */
+        body:not(.is-admin) .sidebar {
+            position: fixed;
+            top: calc(60px + env(safe-area-inset-top));
+            bottom: calc(165px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+        body:not(.is-admin) .players-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        /* Ультра-компактные неоновые карточки игроков (8 штук гарантированно влезут) */
+        body:not(.is-admin) .player-card {
+            padding: 0 16px;
+            height: 44px; /* Компактная фиксированная высота */
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body:not(.is-admin) .player-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0;
+        }
+        body:not(.is-admin) .player-name { 
+            font-size: 1.1rem; 
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        body:not(.is-admin) .player-score { 
+            font-size: 1.4rem; 
+            font-weight: 900;
+            color: var(--accent-lightblue);
+            text-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Мощные неоновые пульсирующие анимации для очередей */
+        body:not(.is-admin) .queue-active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #10b981;
+            animation: neon-green-pulse 1.2s infinite alternate;
+        }
+        body:not(.is-admin) .queue-waiting {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            animation: neon-gold-pulse 1.2s infinite alternate;
+        }
+
+        @keyframes neon-green-pulse {
+            0% { 
+                box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), inset 0 0 4px rgba(16, 185, 129, 0.2);
+                border-color: rgba(16, 185, 129, 0.6);
+            }
+            100% { 
+                box-shadow: 0 0 16px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(16, 185, 129, 0.4);
+                border-color: #10b981;
+            }
+        }
+
+        @keyframes neon-gold-pulse {
+            0% { 
+                box-shadow: 0 0 6px rgba(245, 158, 11, 0.3), inset 0 0 3px rgba(245, 158, 11, 0.1);
+                border-color: rgba(245, 158, 11, 0.5);
+            }
+            100% { 
+                box-shadow: 0 0 14px rgba(245, 158, 11, 0.7), inset 0 0 8px rgba(245, 158, 11, 0.3);
+                border-color: #f59e0b;
+            }
+        }
+
+        /* 3. Кнопка-баззер — Идельное позиционирование снизу с учетом Safe Area */
+        body:not(.is-admin) .main-content {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            height: calc(140px + env(safe-area-inset-bottom));
+            padding-bottom: env(safe-area-inset-bottom);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        body:not(.is-admin) .action-area {
+            background: transparent;
+            padding: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
         body:not(.is-admin) .btn-buzzer {
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             margin: 0 auto;
-            padding: 10px;
-            font-size: 1.1rem;
+            padding: 0;
+            font-size: 1.05rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             line-height: 1.2;
-            box-shadow: 0 8px 0 #991b1b, 0 15px 25px rgba(0,0,0,0.4);
-            transition: all 0.1s;
-        }
-        body:not(.is-admin) .btn-buzzer:active {
-            transform: translateY(8px);
-            box-shadow: 0 0 0 #991b1b, 0 5px 10px rgba(0,0,0,0.4);
-        }
-        body:not(.is-admin) .btn-buzzer:disabled {
-            background: #334155;
-            box-shadow: 0 8px 0 #1e293b, 0 15px 25px rgba(0,0,0,0.4);
-            color: #94a3b8;
-            transform: translateY(4px);
+            border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 6px 0 #991b1b, 0 10px 20px rgba(0,0,0,0.4), 0 0 15px rgba(239, 68, 68, 0.3);
+            transition: all 0.1s ease;
         }
 
-        /* Дополнительный адаптив для экстремально маленьких экранов */
-        @media (max-width: 390px) {
-            body:not(.is-admin) { padding: 10px; }
-            body:not(.is-admin) .sidebar { max-height: calc(100vh - 190px); margin-bottom: 10px; }
-            body:not(.is-admin) .player-card { padding: 6px 12px; }
+        body:not(.is-admin) .btn-buzzer:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #991b1b, 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        body:not(.is-admin) .btn-buzzer:disabled {
+            background: linear-gradient(135deg, #475569, #334155);
+            box-shadow: 0 6px 0 #1e293b, 0 10px 20px rgba(0,0,0,0.3);
+            color: #94a3b8;
+            transform: translateY(2px);
+        }
+
+        /* Фикс адаптивности для экстремально мелких экранов (например, iPhone SE) */
+        @media (max-height: 680px) {
+            body:not(.is-admin) .sidebar {
+                top: calc(55px + env(safe-area-inset-top));
+                bottom: calc(135px + env(safe-area-inset-bottom));
+            }
+            body:not(.is-admin) .player-card { height: 38px; }
             body:not(.is-admin) .player-name { font-size: 1rem; }
-            body:not(.is-admin) .player-score { font-size: 1.3rem; }
-            body:not(.is-admin) .btn-buzzer { width: 115px; height: 115px; font-size: 0.95rem; box-shadow: 0 6px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.4); }
-            body:not(.is-admin) .btn-buzzer:disabled { box-shadow: 0 6px 0 #1e293b; }
+            body:not(.is-admin) .btn-buzzer { width: 100px; height: 100px; font-size: 0.9rem; }
+            body:not(.is-admin) .main-content { height: calc(115px + env(safe-area-inset-bottom)); }
         }
     </style>
 </head>
