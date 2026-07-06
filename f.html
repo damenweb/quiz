@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер 4</title>
+    <title>Самый Умный Коднеймсер</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -173,20 +173,22 @@
         body:not(.is-admin) {
             position: relative;
             width: 100vw;
-            height: 100dvh; /* Динамическая высота iOS против багов Safari */
+            height: 100dvh; 
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             overflow: hidden;
             padding: 0;
             margin: 0;
+            display: block; /* Убираем родительский flex, чтобы не мешал */
         }
 
-        /* Полностью изолируем структуру, отключая дефолтные flex-свойства */
+        /* Изолируем структуру. Убираем transform, чтобы избежать бага с fixed child */
         body:not(.is-admin) .sidebar,
         body:not(.is-admin) .main-content {
             background: transparent;
             border: none;
             padding: 0;
             margin: 0;
+            position: static;
         }
 
         /* Прячем ненужные для игрока элементы */
@@ -196,16 +198,17 @@
             display: none !important;
         }
 
-        /* 1. Кнопка "Выйти" — Фиксировано сверху с учетом безопасной зоны челки */
+        /* 1. Кнопка "Выйти" — Фиксировано сверху */
         body:not(.is-admin) .top-bar {
             position: fixed;
             top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
+            margin: 0 auto; /* Правильное центрирование для fixed без transform */
             width: 100%;
             max-width: 420px;
-            height: calc(50px + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
+            height: calc(60px + env(safe-area-inset-top));
+            padding: env(safe-area-inset-top) 0 0 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -216,20 +219,23 @@
         body:not(.is-admin) .top-bar .btn-score {
             padding: 6px 20px;
             font-size: 0.9rem;
-            background: #334155;
+            background: rgba(51, 65, 85, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             color: var(--text-main);
             cursor: pointer;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
 
-        /* 2. Контейнер Лидерборда — Ровно по центру, авто-высота */
+        /* 2. Контейнер Лидерборда — Ровно по центру */
         body:not(.is-admin) .sidebar {
             position: fixed;
-            top: calc(60px + env(safe-area-inset-top));
-            bottom: calc(165px + env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
+            top: calc(70px + env(safe-area-inset-top));
+            bottom: calc(160px + env(safe-area-inset-bottom));
+            left: 0;
+            right: 0;
+            margin: 0 auto;
             width: 100%;
             max-width: 400px;
             padding: 0 16px;
@@ -245,10 +251,11 @@
             height: 100%;
         }
 
-        /* Ультра-компактные неоновые карточки игроков (8 штук гарантированно влезут) */
+        /* Ультра-компактные неоновые карточки игроков */
         body:not(.is-admin) .player-card {
             padding: 0 16px;
-            height: 44px; /* Компактная фиксированная высота */
+            height: 46px; 
+            min-height: 46px; /* Защита от сжатия */
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -260,6 +267,7 @@
             justify-content: space-between;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0;
         }
         body:not(.is-admin) .player-header {
             width: 100%;
@@ -280,7 +288,7 @@
             text-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
         }
 
-        /* Мощные неоновые пульсирующие анимации для очередей */
+        /* Мощные неоновые пульсирующие анимации */
         body:not(.is-admin) .queue-active {
             background: rgba(16, 185, 129, 0.15);
             border-color: #10b981;
@@ -293,48 +301,31 @@
         }
 
         @keyframes neon-green-pulse {
-            0% { 
-                box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), inset 0 0 4px rgba(16, 185, 129, 0.2);
-                border-color: rgba(16, 185, 129, 0.6);
-            }
-            100% { 
-                box-shadow: 0 0 16px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(16, 185, 129, 0.4);
-                border-color: #10b981;
-            }
+            0% { box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), inset 0 0 4px rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.6); }
+            100% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(16, 185, 129, 0.4); border-color: #10b981; }
         }
 
         @keyframes neon-gold-pulse {
-            0% { 
-                box-shadow: 0 0 6px rgba(245, 158, 11, 0.3), inset 0 0 3px rgba(245, 158, 11, 0.1);
-                border-color: rgba(245, 158, 11, 0.5);
-            }
-            100% { 
-                box-shadow: 0 0 14px rgba(245, 158, 11, 0.7), inset 0 0 8px rgba(245, 158, 11, 0.3);
-                border-color: #f59e0b;
-            }
+            0% { box-shadow: 0 0 6px rgba(245, 158, 11, 0.3), inset 0 0 3px rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.5); }
+            100% { box-shadow: 0 0 14px rgba(245, 158, 11, 0.7), inset 0 0 8px rgba(245, 158, 11, 0.3); border-color: #f59e0b; }
         }
 
-        /* 3. Кнопка-баззер — Идельное позиционирование снизу с учетом Safe Area */
-        body:not(.is-admin) .main-content {
+        /* 3. Кнопка-баззер — Идельное позиционирование снизу */
+        body:not(.is-admin) .action-area {
             position: fixed;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
+            margin: 0 auto;
             width: 100%;
             max-width: 400px;
             height: calc(140px + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
+            padding: 0 0 env(safe-area-inset-bottom) 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 20;
-        }
-        body:not(.is-admin) .action-area {
             background: transparent;
-            padding: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
+            z-index: 20;
         }
 
         body:not(.is-admin) .btn-buzzer {
@@ -355,6 +346,7 @@
             background: linear-gradient(135deg, #ef4444, #dc2626);
             box-shadow: 0 6px 0 #991b1b, 0 10px 20px rgba(0,0,0,0.4), 0 0 15px rgba(239, 68, 68, 0.3);
             transition: all 0.1s ease;
+            cursor: pointer;
         }
 
         body:not(.is-admin) .btn-buzzer:active {
@@ -367,6 +359,7 @@
             box-shadow: 0 6px 0 #1e293b, 0 10px 20px rgba(0,0,0,0.3);
             color: #94a3b8;
             transform: translateY(2px);
+            cursor: not-allowed;
         }
 
         /* Фикс адаптивности для экстремально мелких экранов (например, iPhone SE) */
@@ -375,10 +368,10 @@
                 top: calc(55px + env(safe-area-inset-top));
                 bottom: calc(135px + env(safe-area-inset-bottom));
             }
-            body:not(.is-admin) .player-card { height: 38px; }
+            body:not(.is-admin) .player-card { height: 38px; min-height: 38px; }
             body:not(.is-admin) .player-name { font-size: 1rem; }
             body:not(.is-admin) .btn-buzzer { width: 100px; height: 100px; font-size: 0.9rem; }
-            body:not(.is-admin) .main-content { height: calc(115px + env(safe-area-inset-bottom)); }
+            body:not(.is-admin) .action-area { height: calc(120px + env(safe-area-inset-bottom)); }
         }
     </style>
 </head>
@@ -748,7 +741,7 @@
                 const inQueue = this.queue.some(q => q.login === this.currentUser.login);
                 btn.disabled = inQueue;
                 btn.innerText = inQueue ? "В ОЧЕРЕДИ..." : "ЕСТЬ ОТВЕТ!";
-                btn.style.background = inQueue ? "#475569" : "#ef4444";
+                btn.style.background = inQueue ? "#475569" : "linear-gradient(135deg, #ef4444, #dc2626)";
             },
             
             async restartGame() {
