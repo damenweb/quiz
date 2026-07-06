@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Самый Умный Коднеймсер</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0f172a;       
+            --bg-panel: #1e293b;      
+            --bg-card: #334155;       
+            --text-main: #f8fafc;     
+            --text-muted: #94a3b8;    
+            --accent-red: #ef4444;       
+            --accent-lightblue: #0ea5e9; 
+            --accent-green: #10b981;     
+            --accent-gold: #f59e0b;      
+            --radius-md: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        body:not(.is-admin) .admin-only { display: none !important; }
+        body.is-admin .player-only { display: none !important; }
+
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-base);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: var(--bg-panel); padding: 40px; border-radius: var(--radius-md);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .login-input {
+            padding: 15px; border-radius: 8px; border: 1px solid #475569;
+            background: #0f172a; color: white; font-size: 1.2rem; font-family: inherit;
+        }
+        .login-btn {
+            padding: 15px; background: var(--accent-lightblue); color: white;
+            border: none; border-radius: 8px; font-size: 1.2rem; font-weight: 800; cursor: pointer;
+        }
+        .error-msg { color: var(--accent-red); font-weight: bold; text-align: center; min-height: 20px;}
+
+        .sidebar {
+            width: 350px; min-width: 300px; background-color: var(--bg-panel);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; flex-direction: column; padding: 20px 10px; z-index: 10;
+        }
+
+        .btn-add-player {
+            width: 100%; background: rgba(14, 165, 233, 0.1); color: var(--accent-lightblue);
+            border: 2px dashed rgba(14, 165, 233, 0.4); padding: 10px; margin-bottom: 15px;
+            border-radius: var(--radius-md); font-weight: 800; cursor: pointer; text-transform: uppercase;
+        }
+
+        .players-scroll {
+            flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .players-scroll::-webkit-scrollbar { width: 6px; }
+        .players-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        .player-card {
+            background-color: var(--bg-card); border-radius: var(--radius-md);
+            padding: 10px; display: flex; flex-direction: column; border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .queue-active { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); background-color: #1a4d3a; }
+        .queue-waiting { animation: blink 1.5s infinite; border-color: var(--accent-gold); }
+        @keyframes blink { 0% { border-color: transparent; } 50% { border-color: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold); } 100% { border-color: transparent; } }
+
+        .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .player-name { font-size: 1.2rem; font-weight: 800; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .player-score { font-size: 1.8rem; font-weight: 900; color: white; }
+        
+        .score-actions { display: flex; gap: 5px; }
+        .btn-score { flex: 1; padding: 5px 0; border: none; border-radius: 5px; color: white; font-weight: 800; cursor: pointer; }
+        .btn-minus { background-color: var(--accent-red); }
+        .btn-plus { background-color: var(--accent-lightblue); }
+        .btn-super { background-color: var(--accent-green); }
+        
+        .btn-kick { background: var(--accent-red); color: white; border: none; border-radius: 5px; padding: 5px; margin-top: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; width: 100%;}
+        .btn-delete { background: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 5px; padding: 5px; margin-top: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; width: 100%; transition: all 0.2s;}
+        .btn-delete:hover { background: var(--accent-red); color: white;}
+
+        .main-content {
+            flex-grow: 1; display: flex; flex-direction: column; position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        .top-bar {
+            padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: rgba(15, 23, 42, 0.6);
+        }
+        .admin-controls { display: flex; gap: 15px; align-items: center; }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        
+        .btn-upload-label {
+            background-color: #3b82f6; color: white; padding: 10px 20px; border-radius: var(--radius-md);
+            font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: none; font-size: 1rem;
+        }
+
+        .question-area {
+            flex-grow: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; 
+            align-items: center; text-align: center; justify-content: center;
+        }
+        .question-text { 
+            font-size: 2.2rem; font-weight: 800; line-height: 1.4; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); margin-bottom: 25px;
+            word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; 
+            max-width: 100%; padding: 0 10px;
+        }
+        .media-img { max-width: 90%; max-height: 40vh; border-radius: var(--radius-md); display: none; border: 3px solid var(--bg-card); object-fit: contain; }
+
+        #admin-preview {
+            margin-top: 20px; padding: 20px; background: rgba(245, 158, 11, 0.1);
+            border: 2px dashed var(--accent-gold); border-radius: var(--radius-md);
+            width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center;
+        }
+        .admin-preview-title { color: var(--accent-gold); font-weight: 800; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        #a-text-preview { font-size: 1.8rem; color: var(--accent-gold); }
+
+        .action-area { padding: 20px; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.8); min-height: 100px; }
+        
+        .btn-show-answer {
+            background: transparent; border: 2px solid var(--accent-gold); color: var(--accent-gold);
+            padding: 15px 40px; font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
+            border-radius: 30px; cursor: pointer; transition: all 0.3s ease; display: inline-block;
+        }
+        .btn-show-answer:hover { background: var(--accent-gold); color: #000; box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+
+        .btn-buzzer {
+            background: #ef4444; border: none; color: white; width: 100%; max-width: 400px;
+            padding: 30px; font-size: 2rem; font-weight: 900; text-transform: uppercase;
+            border-radius: 20px; cursor: pointer; box-shadow: 0 10px 0 #991b1b, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .btn-buzzer:active { transform: translateY(10px); box-shadow: 0 0 0 #991b1b, 0 5px 10px rgba(0,0,0,0.4); }
+        .btn-buzzer:disabled { background: #475569; box-shadow: 0 10px 0 #1e293b; cursor: not-allowed; transform: none; }
+
+        @media (max-width: 768px) { 
+            .sidebar { width: 90px; min-width: 90px; padding: 10px 5px; } 
+            .question-text { font-size: 1.3rem; margin-bottom: 15px; }
+            #a-text-preview { font-size: 1.2rem; }
+            .top-bar { flex-direction: column; gap: 10px; padding: 10px; text-align: center; }
+            .admin-controls { flex-wrap: wrap; justify-content: center; }
+            .player-name { font-size: 0.8rem; }
+            .player-score { font-size: 1.2rem; }
+            .btn-score { font-size: 0.8rem; padding: 6px 0; }
+            .btn-buzzer { padding: 20px; font-size: 1.5rem; }
+            .admin-preview { padding: 10px; }
+        }
+
+        /* =========================================
+           ОПТИМИЗИРОВАННЫЙ ИНТЕРФЕЙС ИГРОКА (ИСПРАВЛЕННЫЙ)
+           ========================================= */
+
+        body:not(.is-admin) {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            padding: 15px;
+            overflow: hidden; /* Убираем глобальный скролл экрана */
+        }
+
+        /* Разворачиваем структуру, чтобы выстроить элементы через flex-order */
+        body:not(.is-admin) .main-content {
+            display: contents;
+        }
+
+        /* Кнопка "Выйти" — аккуратная, сверху, по центру */
+        body:not(.is-admin) .top-bar {
+            order: 1;
+            width: 100%;
+            max-width: 420px;
+            background: transparent;
+            border: none;
+            padding: 0 0 12px 0;
+            display: flex;
+            justify-content: center;
+        }
+        body:not(.is-admin) .top-bar .btn-score {
+            padding: 8px 24px;
+            font-size: 0.95rem;
+            background: #334155;
+            border-radius: 6px;
+        }
+
+        /* Полностью скрываем всё лишнее */
+        body:not(.is-admin) .question-area,
+        body:not(.is-admin) #header-status,
+        body:not(.is-admin) .admin-only {
+            display: none !important;
+        }
+
+        /* Компактный список игроков (Лидерборд) по центру */
+        body:not(.is-admin) .sidebar {
+            order: 2;
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            max-height: calc(100vh - 230px); /* Выделяем максимум места под 8+ игроков */
+            min-width: unset;
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        body:not(.is-admin) .players-scroll {
+            gap: 6px; /* Минимальный зазор между карточками */
+        }
+
+        /* Компактные карточки игроков, чтобы все 8 штук влезали без скролла */
+        body:not(.is-admin) .player-card {
+            padding: 8px 16px;
+            background: rgba(51, 65, 85, 0.45);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin-bottom: 0;
+        }
+        body:not(.is-admin) .player-header { margin: 0; }
+        body:not(.is-admin) .player-name { font-size: 1.1rem; letter-spacing: 0.5px; }
+        body:not(.is-admin) .player-score { font-size: 1.5rem; color: var(--accent-lightblue); }
+
+        /* Зона кнопки "Есть ответ" в самом низу */
+        body:not(.is-admin) .action-area {
+            order: 3;
+            background: transparent;
+            padding: 0;
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            justify-content: center;
+            margin-top: auto; /* Мягко прижимает к низу экрана */
+            padding-bottom: 10px;
+        }
+
+        /* Идеальный размер круглой тактильной кнопки */
+        body:not(.is-admin) .btn-buzzer {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+            box-shadow: 0 8px 0 #991b1b, 0 15px 25px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        body:not(.is-admin) .btn-buzzer:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 #991b1b, 0 5px 10px rgba(0,0,0,0.4);
+        }
+        body:not(.is-admin) .btn-buzzer:disabled {
+            background: #334155;
+            box-shadow: 0 8px 0 #1e293b, 0 15px 25px rgba(0,0,0,0.4);
+            color: #94a3b8;
+            transform: translateY(4px);
+        }
+
+        /* Дополнительный адаптив для экстремально маленьких экранов */
+        @media (max-width: 390px) {
+            body:not(.is-admin) { padding: 10px; }
+            body:not(.is-admin) .sidebar { max-height: calc(100vh - 190px); margin-bottom: 10px; }
+            body:not(.is-admin) .player-card { padding: 6px 12px; }
+            body:not(.is-admin) .player-name { font-size: 1rem; }
+            body:not(.is-admin) .player-score { font-size: 1.3rem; }
+            body:not(.is-admin) .btn-buzzer { width: 115px; height: 115px; font-size: 0.95rem; box-shadow: 0 6px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.4); }
+            body:not(.is-admin) .btn-buzzer:disabled { box-shadow: 0 6px 0 #1e293b; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="text-align:center; color: var(--accent-lightblue)">Вход в игру</h2>
+            <div class="error-msg" id="login-error"></div>
+            <input type="text" id="input-login" class="login-input" placeholder="Логин (например: Юра)">
+            <input type="password" id="input-pass" class="login-input" placeholder="Пароль">
+            <button class="login-btn" onclick="app.login()">Войти</button>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <button class="btn-add-player admin-only" id="admin-add-btn" onclick="app.addManualPlayer()">+ Игрок</button>
+        <div class="players-scroll" id="players-container"></div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="admin-controls admin-only" id="admin-top-controls">
+                <input type="file" id="upload" accept=".xlsx, .xls" style="display:none;" onchange="app.handleFileUpload(event)"/>
+                <label for="upload" class="btn-upload-label">Загрузить Вопросы</label>
+                <button class="btn-score btn-minus" style="padding:10px; width:45px; border-radius:50%;" onclick="app.changeQuestion(-1)">◀</button>
+                <button class="btn-score btn-plus" style="padding:10px; width:45px; border-radius:50%;" onclick="app.changeQuestion(1)">▶</button>
+                <button class="btn-upload-label" style="background-color: var(--accent-red);" onclick="app.restartGame()">Сбросить игру</button>
+            </div>
+            <div class="header-actions">
+                <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-muted);" id="header-status">Ожидание...</div>
+                <button class="btn-score" style="padding: 10px 15px; background: #475569; width: auto;" onclick="app.logout()">Выйти</button>
+            </div>
+        </header>
+
+        <div class="question-area" id="q-area">
+            <div class="question-text" id="q-text"></div>
+            <img id="q-img" class="media-img" src="">
+
+            <div id="admin-preview" class="admin-only">
+                <div class="admin-preview-title">Секретный ответ:</div>
+                <div class="question-text" id="a-text-preview"></div>
+                <img id="a-img-preview" class="media-img" src="">
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button class="btn-show-answer admin-only" id="btn-show-answer" onclick="app.toggleAnswer()">Показать ответ</button>
+            <button class="btn-buzzer player-only" id="btn-buzzer" onclick="app.hitBuzzer()">ЕСТЬ ОТВЕТ!</button>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://qibgsqqkeooommyjkyal.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_r2xW5JuACeQ9wf4GlOG1JQ_hFqeVvXo'; 
+        
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const app = {
+            currentUser: null,
+            players: [],
+            queue: [],
+            gameState: {},
+            questionsData: [], 
+            currentQIndex: 0,
+
+            async init() {
+                const savedLogin = localStorage.getItem('quiz_login');
+                const savedPass = localStorage.getItem('quiz_pass');
+                if (savedLogin && savedPass) {
+                    await this.auth(savedLogin, savedPass);
+                }
+            },
+
+            async login() {
+                const l = document.getElementById('input-login').value.trim();
+                const p = document.getElementById('input-pass').value.trim();
+                if (!l || !p) return;
+                await this.auth(l, p);
+            },
+
+            logout() {
+                localStorage.removeItem('quiz_login');
+                localStorage.removeItem('quiz_pass');
+                window.location.reload();
+            },
+
+            async auth(login, password) {
+                const err = document.getElementById('login-error');
+                err.innerText = "Проверка...";
+                
+                const { data, error } = await db
+                    .from('quiz_users')
+                    .select('*')
+                    .eq('login', login)
+                    .eq('password', password)
+                    .maybeSingle();
+
+                if (error) {
+                    err.innerText = "Ошибка сети. Попробуйте снова.";
+                    return;
+                }
+
+                if (!data) {
+                    err.innerText = "Неверный логин или пароль";
+                    localStorage.removeItem('quiz_login');
+                    localStorage.removeItem('quiz_pass');
+                    return;
+                }
+
+                this.currentUser = data;
+                localStorage.setItem('quiz_login', login);
+                localStorage.setItem('quiz_pass', password);
+                
+                if (this.currentUser.role === 'player') {
+                    const { data: existingPlayer } = await db.from('quiz_players').select('*').eq('login', login).maybeSingle();
+                    if (!existingPlayer) {
+                        await db.from('quiz_players').insert([{ login: login, name: login }]);
+                    }
+                }
+
+                document.getElementById('login-screen').style.display = 'none';
+                this.setupUI();
+                this.loadInitialState();
+                this.subscribeRealtime();
+            },
+
+            setupUI() {
+                if (this.currentUser.role === 'admin') {
+                    document.body.classList.add('is-admin');
+                } else {
+                    document.body.classList.remove('is-admin');
+                }
+            },
+
+            async loadInitialState() {
+                const { data: stateData } = await db.from('quiz_state').select('*').eq('id', 1).maybeSingle();
+                if (stateData) this.updateQuestionUI(stateData);
+
+                await this.fetchPlayers();
+
+                const { data: queueData } = await db.from('quiz_queue').select('*').order('created_at', { ascending: true });
+                if (queueData) {
+                    this.queue = queueData;
+                    this.renderPlayers();
+                    this.checkBuzzerState();
+                }
+            },
+
+            async fetchPlayers() {
+                const { data } = await db.from('quiz_players').select('*');
+                if (data) {
+                    this.players = data;
+                    this.renderPlayers();
+                }
+            },
+
+            subscribeRealtime() {
+                db.channel('public:quiz_state').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'quiz_state' }, payload => {
+                    this.updateQuestionUI(payload.new);
+                }).subscribe();
+
+                db.channel('public:quiz_players').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_players' }, payload => {
+                    this.fetchPlayers();
+                }).subscribe();
+
+                db.channel('public:quiz_queue').on('postgres_changes', { event: '*', schema: 'public', table: 'quiz_queue' }, async payload => {
+                    const { data } = await db.from('quiz_queue').select('*').order('created_at', { ascending: true });
+                    this.queue = data || [];
+                    
+                    if (payload.eventType === 'INSERT') {
+                        try {
+                            const audio = new Audio(`${payload.new.login}.mp3`);
+                            audio.play().catch(e => console.log("Браузер заблокировал звук:", e));
+                        } catch(e){}
+                    }
+
+                    this.renderPlayers();
+                    this.checkBuzzerState();
+                }).subscribe();
+            },
+
+            updateQuestionUI(state) {
+                this.gameState = Object.assign({}, this.gameState, state);
+                const isAdmin = this.currentUser && this.currentUser.role === 'admin';
+                
+                const textEl = document.getElementById('q-text');
+                const imgEl = document.getElementById('q-img');
+
+                let rawQText = state.q_text || '';
+                let currQ = '', totalQ = '';
+                
+                if (rawQText.includes('|||')) {
+                    const parts = rawQText.split('|||');
+                    rawQText = parts[0];
+                    if (parts[1]) {
+                        const nums = parts[1].split('|');
+                        currQ = nums[0]; totalQ = nums[1];
+                    }
+                }
+                
+                let status = "Ожидание...";
+
+                if (isAdmin) {
+                    textEl.innerText = rawQText;
+                    imgEl.src = state.q_img || '';
+                    imgEl.style.display = state.q_img ? 'block' : 'none';
+
+                    document.getElementById('a-text-preview').innerText = state.a_text || '';
+                    const aImg = document.getElementById('a-img-preview');
+                    aImg.src = state.a_img || '';
+                    aImg.style.display = state.a_img ? 'block' : 'none';
+
+                    const btn = document.getElementById('btn-show-answer');
+                    if (btn) btn.innerText = state.show_answer ? "Скрыть ответ (на экранах)" : "Показать ответ";
+                    
+                    if (currQ && totalQ) {
+                        status = `ВОПРОС ${currQ} / ${totalQ}`;
+                    } else if (rawQText) {
+                        status = "ВОПРОС ЗАГРУЖЕН";
+                    }
+                    document.getElementById('header-status').innerText = status;
+                } else {
+                    textEl.innerText = state.show_answer ? (state.a_text || '') : rawQText;
+                    const imgSrc = state.show_answer ? state.a_img : state.q_img;
+                    
+                    if (imgSrc) {
+                        imgEl.src = imgSrc;
+                        imgEl.style.display = 'block';
+                    } else {
+                        imgEl.style.display = 'none';
+                        imgEl.src = '';
+                    }
+
+                    if (state.show_answer) {
+                        status = "ОТВЕТ НА ЭКРАНЕ";
+                    } else if (currQ && totalQ) {
+                        status = `ВОПРОС ${currQ} / ${totalQ}`;
+                    } else if (rawQText) {
+                        status = "ВНИМАНИЕ ВОПРОС!";
+                    }
+                    document.getElementById('header-status').innerText = status;
+                }
+            },
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = new Uint8Array(evt.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        
+                        const rawData = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                        
+                        const validRows = rawData.filter(row => row.length > 0 && row.some(cell => cell !== undefined && cell !== null && cell !== ''));
+                        
+                        if (validRows.length > 1) {
+                            this.questionsData = validRows.slice(1).map(row => {
+                                let qTxt = row[0] != null ? String(row[0]) : '';
+                                let qImg = row[1] && String(row[1]).startsWith('http') ? String(row[1]) : '';
+                                let aTxt = row[2] != null ? String(row[2]) : '';
+                                let aImg = row[3] && String(row[3]).startsWith('http') ? String(row[3]) : '';
+
+                                if (!aTxt && row[1] != null && !String(row[1]).startsWith('http')) {
+                                    aTxt = String(row[1]);
+                                    qImg = ''; 
+                                }
+
+                                return { qText: qTxt, qImg: qImg, aText: aTxt, aImg: aImg };
+                            });
+                            
+                            this.currentQIndex = 0;
+                            this.pushStateToDB();
+                            alert(`Успешно загружено вопросов: ${this.questionsData.length}`);
+                        } else {
+                            alert("Файл пуст или содержит только одну строку (заголовки).");
+                        }
+                    } catch (err) {
+                        alert("Ошибка при чтении файла.");
+                        console.error(err);
+                    }
+                    e.target.value = ''; 
+                };
+                reader.readAsArrayBuffer(file);
+            },
+
+            changeQuestion(dir) {
+                const newIndex = this.currentQIndex + dir;
+                if (newIndex >= 0 && newIndex < this.questionsData.length) {
+                    this.currentQIndex = newIndex;
+                    this.pushStateToDB();
+                    db.from('quiz_queue').delete().neq('login', 'non_existent_row').then();
+                }
+            },
+
+            toggleAnswer() {
+                this.gameState.show_answer = !this.gameState.show_answer;
+                db.from('quiz_state').update({ show_answer: this.gameState.show_answer }).eq('id', 1).then();
+            },
+
+            pushStateToDB() {
+                if (this.questionsData.length === 0) return;
+                
+                const q = this.questionsData[this.currentQIndex];
+                
+                const safeQText = q.qText || 'Вопрос без текста';
+                const safeAText = q.aText || 'Ответ без текста';
+                
+                const qTextWithCounter = `${safeQText}|||${this.currentQIndex + 1}|${this.questionsData.length}`;
+                
+                const newState = {
+                    q_text: qTextWithCounter,
+                    q_img: q.qImg || null,
+                    a_text: safeAText,
+                    a_img: q.aImg || null,
+                    show_answer: false
+                };
+
+                this.updateQuestionUI(newState);
+                
+                db.from('quiz_state').update(newState).eq('id', 1).then();
+            },
+
+            async addManualPlayer() {
+                const name = prompt("Имя игрока:");
+                if (name) {
+                    const login = 'manual_' + Date.now();
+                    await db.from('quiz_players').insert([{ login: login, name: name, is_manual: true }]);
+                }
+            },
+
+            async updateScore(login, delta) {
+                const p = this.players.find(pl => pl.login === login);
+                if (p) {
+                    await db.from('quiz_players').update({ score: p.score + delta }).eq('login', login);
+                }
+            },
+
+            async removeFromQueue(login) {
+                await db.from('quiz_queue').delete().eq('login', login);
+            },
+
+            async deletePlayer(login) {
+                if (!confirm("Вы уверены, что хотите полностью удалить этого игрока из игры?")) return;
+                
+                this.players = this.players.filter(p => p.login !== login);
+                this.queue = this.queue.filter(q => q.login !== login);
+                this.renderPlayers();
+
+                await db.from('quiz_queue').delete().eq('login', login);
+                await db.from('quiz_players').delete().eq('login', login);
+            },
+
+            async hitBuzzer() {
+                if (this.queue.find(q => q.login === this.currentUser.login)) return;
+                
+                document.getElementById('btn-buzzer').disabled = true;
+                await db.from('quiz_queue').insert([{ login: this.currentUser.login }]);
+            },
+
+            checkBuzzerState() {
+                if (!this.currentUser || this.currentUser.role !== 'player') return;
+                const btn = document.getElementById('btn-buzzer');
+                const inQueue = this.queue.some(q => q.login === this.currentUser.login);
+                btn.disabled = inQueue;
+                btn.innerText = inQueue ? "В ОЧЕРЕДИ..." : "ЕСТЬ ОТВЕТ!";
+                btn.style.background = inQueue ? "#475569" : "#ef4444";
+            },
+            
+            async restartGame() {
+                if (!confirm("Точно сбросить всю игру (счет, очередь и текущий вопрос)?")) return;
+                
+                await db.from('quiz_players').update({ score: 0 }).neq('login', 'dummy_non_existent');
+                
+                await db.from('quiz_queue').delete().neq('login', 'dummy_non_existent');
+                
+                this.questionsData = [];
+                this.currentQIndex = 0;
+                
+                const resetState = {
+                    q_text: 'Игра перезапущена. Ожидание загрузки файла с вопросами...',
+                    q_img: null,
+                    a_text: '',
+                    a_img: null,
+                    show_answer: false
+                };
+
+                this.updateQuestionUI(resetState);
+                await db.from('quiz_state').update(resetState).eq('id', 1);
+            },
+
+            renderPlayers() {
+                const container = document.getElementById('players-container');
+                container.innerHTML = '';
+                
+                const isAdmin = this.currentUser && this.currentUser.role === 'admin';
+                
+                let displayPlayers = [...this.players];
+                if (!isAdmin) {
+                    displayPlayers.sort((a, b) => b.score - a.score);
+                } else {
+                    displayPlayers.sort((a, b) => a.name.localeCompare(b.name));
+                }
+
+                displayPlayers.forEach(p => {
+                    const queueIndex = this.queue.findIndex(q => q.login === p.login);
+                    let queueClass = '';
+                    let adminKickBtn = '';
+                    let deleteBtn = isAdmin ? `<button class="btn-delete" onclick="app.deletePlayer('${p.login}')">Удалить игрока</button>` : '';
+
+                    if (queueIndex === 0) {
+                        queueClass = 'queue-active';
+                        if (isAdmin) adminKickBtn = `<button class="btn-kick" onclick="app.removeFromQueue('${p.login}')">Убрать отвечающего</button>`;
+                    } else if (queueIndex > 0) {
+                        queueClass = 'queue-waiting';
+                        if (isAdmin) adminKickBtn = `<button class="btn-kick" style="background:#f59e0b;" onclick="app.removeFromQueue('${p.login}')">Убрать из ожидания</button>`;
+                    }
+
+                    let controls = isAdmin ? `
+                        <div class="score-actions">
+                            <button class="btn-score btn-minus" onclick="app.updateScore('${p.login}', -1)">-1</button>
+                            <button class="btn-score btn-plus" onclick="app.updateScore('${p.login}', 1)">+1</button>
+                            <button class="btn-score btn-super" onclick="app.updateScore('${p.login}', 3)">+3</button>
+                        </div>
+                    ` : '';
+
+                    container.innerHTML += `
+                        <div class="player-card ${queueClass}">
+                            <div class="player-header">
+                                <div class="player-name">${p.name}</div>
+                                <div class="player-score">${p.score}</div>
+                            </div>
+                            ${controls}
+                            ${adminKickBtn}
+                            ${deleteBtn}
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
