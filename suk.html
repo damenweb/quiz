@@ -387,14 +387,13 @@
 
             async playIntro() {
                 try {
-                    // Если интро уже играет, можно закомментировать строку ниже, чтобы треки накладывались друг на друга,
-                    // либо оставить так, чтобы при повторном нажатии звук запускался заново.
-                    if (this.introAudio) { this.introAudio.pause(); } 
-                    
-                    this.introAudio = new Audio('intro.mp3');
-                    await this.introAudio.play();
+                    await db.channel('quiz_global').send({
+                        type: 'broadcast',
+                        event: 'start_intro',
+                        payload: {}
+                    });
                 } catch (e) {
-                    console.error("Браузер заблокировал или не смог воспроизвести интро:", e);
+                    console.error("Не удалось отправить сигнал интро:", e);
                 }
             },
             
@@ -524,6 +523,12 @@
 
                     this.renderPlayers();
                     this.checkBuzzerState();
+                }).subscribe();
+
+                // === НОВЫЙ БЛОК: Слушаем команду на запуск интро у всех игроков ===
+                db.channel('quiz_global').on('broadcast', { event: 'start_intro' }, () => {
+                    const audio = new Audio('intro.mp3');
+                    audio.play().catch(e => console.log("Браузер заблокировал интро:", e));
                 }).subscribe();
             },
 
