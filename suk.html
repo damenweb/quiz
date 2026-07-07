@@ -344,6 +344,9 @@
                 <button class="btn-neutral circle" onclick="app.changeQuestion(-1)">◀</button>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(1)">▶</button>
                 <button class="btn-neutral" onclick="app.restartGame()">Сбросить игру</button>
+                
+                <button class="btn-neutral" onclick="app.playIntro()">🎵</button>
+                
                 <button class="btn-neutral" id="btn-show-answer" style="display:none;" onclick="app.toggleAnswer()">Показать ответ</button>
             </div>
             <div class="header-actions">
@@ -382,6 +385,19 @@
             questionsData: [], 
             currentQIndex: 0,
 
+            async playIntro() {
+                try {
+                    // Если интро уже играет, можно закомментировать строку ниже, чтобы треки накладывались друг на друга,
+                    // либо оставить так, чтобы при повторном нажатии звук запускался заново.
+                    if (this.introAudio) { this.introAudio.pause(); } 
+                    
+                    this.introAudio = new Audio('intro.mp3');
+                    await this.introAudio.play();
+                } catch (e) {
+                    console.error("Браузер заблокировал или не смог воспроизвести интро:", e);
+                }
+            },
+            
             async init() {
                 const savedLogin = localStorage.getItem('quiz_login');
                 const savedPass = localStorage.getItem('quiz_pass');
