@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер</title>
+    <title>Самый Умный Коднеймсер 2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -653,19 +653,28 @@
             pushStateToDB() {
                 if (this.questionsData.length === 0) return;
                 const q = this.questionsData[this.currentQIndex];
-                const safeQText = q.qText || 'Вопрос без текста';
-                const safeAText = q.aText || 'Ответ без текста';
-                const qTextWithCounter = `${safeQText}|||${this.currentQIndex + 1}|${this.questionsData.length}`;
                 
+                // Проверь, чтобы названия полей ('q_text', 'q_current' и т.д.) 
+                // в точности совпадали с названиями колонок в твоей таблице quiz_state
                 const newState = {
-                    q_text: qTextWithCounter,
+                    q_text: q.qText || 'Вопрос без текста',
                     q_img: q.qImg || null,
-                    a_text: safeAText,
+                    a_text: q.aText || 'Ответ без текста',
                     a_img: q.aImg || null,
-                    show_answer: false
+                    show_answer: false,
+                    q_current: this.currentQIndex + 1,
+                    q_total: this.questionsData.length
                 };
+
                 this.updateQuestionUI(newState);
-                db.from('quiz_state').update(newState).eq('id', 1).then();
+                
+                // ВАЖНО: убедись, что 'id' записи в таблице quiz_state действительно равен 1
+                db.from('quiz_state')
+                  .upsert({ id: 1, ...newState })
+                  .then(({ error }) => {
+                      if (error) console.error("Ошибка записи в БД:", error);
+                      else console.log("Успешно записано!");
+                  });
             },
 
             async addManualPlayer() {
