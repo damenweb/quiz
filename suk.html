@@ -386,6 +386,15 @@
             currentQIndex: 0,
 
             async playIntro() {
+                // 1. Сразу запускаем звук у себя (у админа)
+                try {
+                    const audio = new Audio('intro.mp3');
+                    audio.play().catch(e => console.log("Браузер админа заблокировал звук:", e));
+                } catch (e) {
+                    console.error("Ошибка локального воспроизведения:", e);
+                }
+            
+                // 2. Отправляем сигнал всем остальным игрокам
                 try {
                     await db.channel('quiz_global').send({
                         type: 'broadcast',
