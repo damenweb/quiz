@@ -664,6 +664,7 @@
                 const p = this.players.find(pl => pl.login === login);
                 if (p) {
                     await db.from('quiz_players').update({ score: p.score + delta }).eq('login', login);
+                    await db.from('quiz_queue').delete().eq('login', login);
                 }
             },
 
@@ -762,8 +763,8 @@
                     let controls = isAdmin ? `
                         <div class="score-actions">
                             <button class="btn-score btn-minus" onclick="app.updateScore('${p.login}', -1)">-1</button>
-                            <button class="btn-score btn-plus" onclick="app.updateScore('${p.login}', 1)">+1</button>
-                            <button class="btn-score btn-super" onclick="app.updateScore('${p.login}', 3)">+3</button>
+                            <button class="btn-score btn-plus" onclick="app.updateScore('${p.login}', 0)">0</button>
+                            <button class="btn-score btn-super" onclick="app.updateScore('${p.login}', 1)">+1</button>
                             <button class="btn-delete-small" title="Удалить игрока" onclick="app.deletePlayer('${p.login}')">✖</button>
                         </div>
                     ` : '';
@@ -775,7 +776,7 @@
                                 <div class="player-score">${p.score}</div>
                             </div>
                             ${controls}
-                            ${adminKickBtn}
+                            //{adminKickBtn}
                         </div>
                     `;
                 });
