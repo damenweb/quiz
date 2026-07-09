@@ -868,7 +868,26 @@
                         btn.style.boxShadow = "0 6px 0 #047857, 0 10px 20px rgba(0,0,0,0.4), 0 0 20px rgba(16, 185, 129, 0.6)";
                         btn.style.color = "#ffffff";
                     } else {
-                        btn.innerText = "В ОЧЕРЕДИ...";
+
+                        const positions = [
+                            "",
+                            "1ый",
+                            "2ой",
+                            "3ий",
+                            "4ый",
+                            "5ый",
+                            "6ой",
+                            "7ой",
+                            "8ой",
+                            "9ый"
+                        ];
+                    
+                        if (queueIndex >= 1 && queueIndex <= 9) {
+                            btn.innerText = `ВЫ ${positions[queueIndex].toUpperCase()} В ОЧЕРЕДИ`;
+                        } else {
+                            btn.innerText = "ВЫ В ОЧЕРЕДИ...";
+                        }
+                        btn.innerText = "ВЫ ОЧЕРЕДИ...";
                         btn.style.background = "linear-gradient(135deg, #475569, #334155)";
                         btn.style.boxShadow = "0 6px 0 #1e293b, 0 10px 20px rgba(0,0,0,0.3)";
                         btn.style.color = "#94a3b8";
