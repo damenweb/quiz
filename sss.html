@@ -871,19 +871,19 @@
 
                         const positions = [
                             "",
-                            "1ый",
-                            "2ой",
-                            "3ий",
-                            "4ый",
-                            "5ый",
-                            "6ой",
-                            "7ой",
-                            "8ой",
-                            "9ый"
+                            "ый",
+                            "ой",
+                            "ий",
+                            "ый",
+                            "ый",
+                            "ой",
+                            "ой",
+                            "ой",
+                            "ый"
                         ];
                     
                         if (queueIndex >= 1 && queueIndex <= 9) {
-                            btn.innerText = `ВЫ ${positions[queueIndex].toUpperCase()} В ОЧЕРЕДИ`;
+                            btn.innerHTML = `ВЫ ${queueIndex}<sup>${endings[queueIndex]}</sup> В ОЧЕРЕДИ`;
                         } else {
                             btn.innerText = "ВЫ В ОЧЕРЕДИ...";
                         }
