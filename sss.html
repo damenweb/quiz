@@ -869,7 +869,7 @@
                         btn.style.color = "#ffffff";
                     } else {
 
-                        const positions = [
+                        const endings = [
                             "",
                             "ый",
                             "ой",
@@ -883,7 +883,7 @@
                         ];
                     
                         if (queueIndex >= 1 && queueIndex <= 9) {
-                            btn.innerText = `ВЫ ${queueIndex}${endings[queueIndex]} В ОЧЕРЕДИ`;
+                            btn.innerHTML = `ВЫ ${queueIndex}<sup>-${endings[queueIndex]}</sup> В ОЧЕРЕДИ`;
                         } else {
                             btn.innerText = "ВЫ В ОЧЕРЕДИ...";
                         }
