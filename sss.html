@@ -869,21 +869,21 @@
                         btn.style.color = "#ffffff";
                     } else {
 
-                        const endings = [
+                        const positions = [
                             "",
-                            "ый",
-                            "ой",
-                            "ий",
-                            "ый",
-                            "ый",
-                            "ой",
-                            "ой",
-                            "ой",
-                            "ый"
+                            "ПРИГОТОВТЕСЬ, ВЫ СЛЕДУЮЩИЙ",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 2",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 3",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 4",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 5",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 6",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 7",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 8",
+                            "ВАШ НОМЕР В ОЧЕРЕДИ: 9"
                         ];
                     
                         if (queueIndex >= 1 && queueIndex <= 9) {
-                            btn.innerHTML = `ВЫ ${queueIndex}<sup>-${endings[queueIndex]}</sup> В ОЧЕРЕДИ`;
+                            btn.innerHTML = `${positions[queueIndex]}`;
                         } else {
                             btn.innerText = "ВЫ В ОЧЕРЕДИ...";
                         }
