@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер 2.0</title>
+    <title>Самый Умный Коднеймсер</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -411,7 +411,7 @@
                 <label for="upload" class="btn-neutral">Загрузить</label>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(-1)">◀</button>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(1)">▶</button>
-                <button class="btn-neutral" id="btn-toggle-answer" onclick="app.toggleAnswer()">Показать ответ</button>
+                <button class="btn-neutral" id="btn-toggle-answer" onclick="app.toggleAnswer()">Ответ</button>
                 <button class="btn-neutral" onclick="app.restartGame()">Сброс игры</button>
                 <button class="btn-neutral" onclick="app.clearAllPenalties()" title="Обнулить ожидание у всех игроков">Сброс ⏱</button>
                 <button class="btn-neutral" onclick="app.playIntro()">🎵</button>
@@ -769,7 +769,7 @@
                     // Подпись переключателя отражает, видят ли ответ игроки.
                     const toggleBtn = document.getElementById('btn-toggle-answer');
                     if (toggleBtn) {
-                        toggleBtn.innerText = answerShown ? 'Скрыть ответ' : 'Показать ответ';
+                        toggleBtn.innerText = answerShown ? 'Ответ' : 'Ответ';
                         toggleBtn.style.background = answerShown
                             ? 'linear-gradient(135deg, #b45309, #92400e)' : '';
                     }
