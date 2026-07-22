@@ -775,7 +775,7 @@
                     }
 
                     if (currQ && totalQ) {
-                        status = `ВОПРОС ${currQ} / ${totalQ}${answerShown ? ' — ОТВЕТ' : ''}`;
+                        status = `${answerShown ? 'ОТВЕТ' : 'ВОПРОС'} ${currQ} / ${totalQ}`;
                     } else if (rawQText && !isGameEmpty) {
                         status = "ВОПРОС ЗАГРУЖЕН";
                     }
