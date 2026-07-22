@@ -935,7 +935,20 @@
             // на случай случайного нажатия. Считается на сервере (см. RPC).
             async reducePenalty(login) {
                 await db.rpc('quiz_reduce_penalty', { p_login: login });
+                // «−5с» = отмена случайного нажатия. Само нажатие и слот
+                // отвечающего занимает, и +5с вешает, поэтому отмена должна
+                // снимать оба: иначе статус «отвечает» залипает на игроке.
+                // (.eq → WHERE есть, safe-update пропускает.)
+                await db.from('quiz_queue').delete().eq('login', login);
                 await this.fetchPlayers();
+                // realtime-эхо очереди может не долететь до ведущего — читаем явно.
+                const { data: q } = await db
+                    .from('quiz_queue')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+                this.queue = q || [];
+                this.iAmAnswerer = this.isMeAnswering();
+                this.renderPlayers();
                 this.checkBuzzerState();
             },
 
