@@ -408,7 +408,7 @@
         <header class="top-bar">
             <div class="admin-controls admin-only" id="admin-top-controls">
                 <input type="file" id="upload" accept=".xlsx, .xls" style="display:none;" onchange="app.handleFileUpload(event)"/>
-                <label for="upload" class="btn-neutral">Загрузить вопросы</label>
+                <label for="upload" class="btn-neutral">Загрузить</label>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(-1)">◀</button>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(1)">▶</button>
                 <button class="btn-neutral" id="btn-toggle-answer" onclick="app.toggleAnswer()">Показать ответ</button>
@@ -775,7 +775,7 @@
                     }
 
                     if (currQ && totalQ) {
-                        status = `ВОПРОС ${currQ} / ${totalQ}${answerShown ? ' — ОТВЕТ ОТКРЫТ' : ''}`;
+                        status = `ВОПРОС ${currQ} / ${totalQ}${answerShown ? ' — ОТВЕТ' : ''}`;
                     } else if (rawQText && !isGameEmpty) {
                         status = "ВОПРОС ЗАГРУЖЕН";
                     }
