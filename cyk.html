@@ -65,7 +65,7 @@
         .error-msg { color: var(--accent-red); font-weight: bold; text-align: center; min-height: 20px;}
 
         .sidebar {
-            width: 300px; min-width: 300px; background-color: var(--bg-panel);
+            width: 350px; min-width: 300px; background-color: var(--bg-panel);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
             display: flex; flex-direction: column; padding: 20px 10px; z-index: 10;
         }
@@ -408,12 +408,12 @@
         <header class="top-bar">
             <div class="admin-controls admin-only" id="admin-top-controls">
                 <input type="file" id="upload" accept=".xlsx, .xls" style="display:none;" onchange="app.handleFileUpload(event)"/>
-                <label for="upload" class="btn-neutral">Загрузить</label>
+                <label for="upload" class="btn-neutral">Загрузить Вопросы</label>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(-1)">◀</button>
                 <button class="btn-neutral circle" onclick="app.changeQuestion(1)">▶</button>
                 <button class="btn-neutral" id="btn-toggle-answer" onclick="app.toggleAnswer()">Показать ответ</button>
-                <button class="btn-neutral" onclick="app.restartGame()">Сброс игры</button>
-                <button class="btn-neutral" onclick="app.clearAllPenalties()" title="Обнулить ожидание у всех игроков">Сброс ⏱</button>
+                <button class="btn-neutral" onclick="app.restartGame()">Сбросить игру</button>
+                <button class="btn-neutral" onclick="app.clearAllPenalties()" title="Обнулить ожидание у всех игроков">⏱ Сбросить ожидания</button>
                 <button class="btn-neutral" onclick="app.playIntro()">🎵</button>
             </div>
             <div class="header-actions">
@@ -431,7 +431,7 @@
             <img id="q-img" class="media-img" src="">
 
             <div id="admin-preview" class="admin-only">
-                <div class="admin-preview-title">Ответ:</div>
+                <div class="admin-preview-title">Секретный ответ:</div>
                 <div class="question-text" id="a-text-preview"></div>
                 <img id="a-img-preview" class="media-img" src="">
             </div>
@@ -775,7 +775,7 @@
                     }
 
                     if (currQ && totalQ) {
-                        status = `${answerShown ? 'ОТВЕТ' : 'ВОПРОС'} ${currQ} / ${totalQ}`;
+                        status = `ВОПРОС ${currQ} / ${totalQ}${answerShown ? ' — ОТВЕТ ОТКРЫТ' : ''}`;
                     } else if (rawQText && !isGameEmpty) {
                         status = "ВОПРОС ЗАГРУЖЕН";
                     }
@@ -867,15 +867,34 @@
                 reader.readAsArrayBuffer(file);
             },
 
-            changeQuestion(dir) {
+            async changeQuestion(dir) {
                 const newIndex = this.currentQIndex + dir;
-                if (newIndex >= 0 && newIndex < this.questionsData.length) {
-                    this.currentQIndex = newIndex;
-                    this.pushStateToDB();
-                    // Новый вопрос — сбрасываем ожидания всех и аккумулятор T
-                    // на сервере (очередь тоже чистится внутри RPC).
-                    db.rpc('quiz_reset_thinking').then();
+                if (newIndex < 0 || newIndex >= this.questionsData.length) return;
+                this.currentQIndex = newIndex;
+                this.pushStateToDB();
+
+                // Новый вопрос — сбрасываем ожидания всех и аккумулятор T
+                // на сервере (очередь тоже чистится внутри RPC). Ждём ответа,
+                // чтобы дальше читать уже сброшенное состояние, и не глотаем ошибку.
+                const { error } = await db.rpc('quiz_reset_thinking');
+                if (error) {
+                    console.error('quiz_reset_thinking не сработал:', error);
+                    return;
                 }
+
+                // НЕ полагаемся только на realtime-эхо: очередь и пенальти живут
+                // в отдельных каналах (quiz_queue / quiz_players), которые могут
+                // не догнать смену вопроса у ведущего — тогда подсветка
+                // отвечающего и таймеры ⏳ «залипают». Перечитываем состояние явно.
+                await this.fetchPlayers();
+                const { data: q } = await db
+                    .from('quiz_queue')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+                this.queue = q || [];
+                this.iAmAnswerer = this.isMeAnswering();
+                await this.fetchAnswers();      // ⭐ под новый q_idx
+                this.checkBuzzerState();
             },
 
             pushStateToDB() {
