@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самый Умный Коднеймсер</title>
+    <title>Самый Умный Коднеймсер 2.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -860,7 +860,7 @@
 
                     this.pushStateToDB();
                     // Первый вопрос — чистый старт тайминга: очередь, пенальти, T.
-                    db.rpc('quiz_reset_thinking').then();
+                    await this.resetThinking();
                     alert(`Успешно загружено и сохранено в БД вопросов: ${this.questionsData.length}`);
                     e.target.value = '';
                 };
@@ -873,14 +873,8 @@
                 this.currentQIndex = newIndex;
                 this.pushStateToDB();
 
-                // Новый вопрос — сбрасываем ожидания всех и аккумулятор T
-                // на сервере (очередь тоже чистится внутри RPC). Ждём ответа,
-                // чтобы дальше читать уже сброшенное состояние, и не глотаем ошибку.
-                const { error } = await db.rpc('quiz_reset_thinking');
-                if (error) {
-                    console.error('quiz_reset_thinking не сработал:', error);
-                    return;
-                }
+                // Новый вопрос — сбрасываем очередь, ожидания всех и аккумулятор T.
+                await this.resetThinking();
 
                 // НЕ полагаемся только на realtime-эхо: очередь и пенальти живут
                 // в отдельных каналах (quiz_queue / quiz_players), которые могут
@@ -895,6 +889,26 @@
                 this.iAmAnswerer = this.isMeAnswering();
                 await this.fetchAnswers();      // ⭐ под новый q_idx
                 this.checkBuzzerState();
+            },
+
+            // Сброс «времени размышления»: очередь, личные ожидания и аккумулятор T.
+            // Раньше это делала серверная RPC quiz_reset_thinking, но её DELETE/UPDATE
+            // шли без WHERE и падали на safe-update (pg_safeupdate, ошибка 21000).
+            // Делаем то же самое на клиенте: каждый запрос с WHERE (safe-update их
+            // пропускает — как в clearAllPenalties / restartGame), поэтому деплой
+            // SQL-функции больше не нужен.
+            async resetThinking() {
+                await db.from('quiz_queue').delete().neq('login', '__none__');
+                await db.from('quiz_players').update({ penalty_until_t: 0 }).neq('login', '__none__');
+                // think_since — серверное время (часы клиента могут врать): берём
+                // лучшую оценку serverNow() и пишем ISO-строку в timestamptz.
+                const sinceIso = new Date(this.serverNow()).toISOString();
+                await db.from('quiz_state')
+                    .update({ think_base: 0, think_since: sinceIso })
+                    .eq('id', 1);
+                // Локальный кеш аккумулятора — чтобы ⏳ считался от нуля до realtime-эха.
+                this.thinkBase = 0;
+                this.thinkSince = this.serverNow();
             },
 
             pushStateToDB() {
@@ -1207,8 +1221,9 @@
                 await db.from('quiz_queue').delete().neq('login', 'dummy_non_existent');
                 await db.from('quiz_questions').delete().neq('id', -1);
                 await db.from('quiz_answers').delete().neq('id', -1);
-                // Обнуляем ожидания игроков и аккумулятор «времени размышления».
-                await db.rpc('quiz_reset_thinking');
+                // Обнуляем ожидания игроков и аккумулятор «времени размышления»
+                // (клиентский сброс с WHERE — без падения на safe-update).
+                await this.resetThinking();
                 this.questionsData = [];
                 this.answers = [];
                 this.currentQIndex = 0;
